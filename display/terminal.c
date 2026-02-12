@@ -14,7 +14,6 @@ void terminal_init(void) {
 }
 
 static void draw_char(char c, size_t x, size_t y) {
-    framebuffer_t *fb = fb_get();
     
     unsigned char uc = (unsigned char)c;
 

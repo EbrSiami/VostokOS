@@ -10,20 +10,22 @@ CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
           -fno-stack-protector \
           -fno-stack-check \
           -I.
-		  
+
 LDFLAGS := -nostdlib -static -T linker.ld
 
 # Source files
 KERNEL_SRC := kernel.c
 DISPLAY_SRC := display/framebuffer.c display/terminal.c
 FONT_SRC := font/font_data.c
+LIB_SRC := lib/string.c lib/printk.c
 
 # Object files
 KERNEL_OBJ := $(KERNEL_SRC:.c=.o)
 DISPLAY_OBJ := $(DISPLAY_SRC:.c=.o)
 FONT_OBJ := $(FONT_SRC:.c=.o)
+LIB_OBJ := $(LIB_SRC:.c=.o)
 
-ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ)
+ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ)
 
 all: $(ISO)
 
@@ -32,15 +34,16 @@ kernel.o: kernel.c
 	$(CC) $(CFLAGS) -c kernel.c -o kernel.o
 
 # Compile display modules
-display/framebuffer.o: display/framebuffer.c display/framebuffer.h
-	$(CC) $(CFLAGS) -c display/framebuffer.c -o display/framebuffer.o
-
-display/terminal.o: display/terminal.c display/terminal.h display/framebuffer.h font/font.h
-	$(CC) $(CFLAGS) -c display/terminal.c -o display/terminal.o
+display/%.o: display/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile font
-font/font_data.o: font/font_data.c font/font.h
-	$(CC) $(CFLAGS) -c font/font_data.c -o font/font_data.o
+font/%.o: font/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile lib
+lib/%.o: lib/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link kernel
 $(KERNEL): $(ALL_OBJ) linker.ld
@@ -63,6 +66,6 @@ run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -m 512M
 
 clean:
-	rm -rf *.o display/*.o font/*.o *.elf *.iso iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o *.elf *.iso iso_root
 
 .PHONY: all run clean

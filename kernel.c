@@ -3,6 +3,7 @@
 #include "limine.h"
 #include "display/framebuffer.h"
 #include "display/terminal.h"
+#include "lib/printk.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -31,14 +32,19 @@ void _start(void) {
     // Initialize terminal
     terminal_init();
     
-    // Test it out!
-    terminal_write("Welcome to VostokOS!\n");
-    terminal_write("Kernel loaded successfully.\n\n");
-    terminal_write("System Information:\n");
-    terminal_write("  - Framebuffer initialized\n");
-    terminal_write("  - Terminal ready\n\n");
-    terminal_write("Ready for development...\n");
-    terminal_write("FUCK ISRAEL BTW");
+    // Test printk!
+    printk("=== VostokOS Kernel ===\n\n");
+    printk("Framebuffer: %dx%d @ %d bpp\n", fb->width, fb->height, fb->bpp);
+    printk("Address: 0x%llx\n", (uint64_t)fb->address);
+    printk("Pitch: %u bytes\n\n", fb->pitch);
+    
+    printk("Testing numbers:\n");
+    printk("  Decimal: %d\n", 42);
+    printk("  Hex (lower): 0x%x\n", 0xDEADBEEF);
+    printk("  Hex (upper): 0x%X\n", 0xCAFEBABE);
+    printk("  Pointer: %p\n", (void*)0x123456789ABC);
+    
+    printk("\nKernel ready!\n");
     
     hcf();
 }
