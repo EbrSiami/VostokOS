@@ -4,6 +4,8 @@
 #include "display/framebuffer.h"
 #include "display/terminal.h"
 #include "lib/printk.h"
+#include "arch/gdt.h"
+#include "arch/idt.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -26,25 +28,24 @@ void _start(void) {
 
     struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
     
-    // Initialize framebuffer
+    // Initialize framebuffer and terminal
     fb_init((uint32_t*)fb->address, fb->width, fb->height, fb->pitch, fb->bpp);
-    
-    // Initialize terminal
     terminal_init();
     
-    // Test printk!
     printk("=== VostokOS Kernel ===\n\n");
-    printk("Framebuffer: %dx%d @ %d bpp\n", fb->width, fb->height, fb->bpp);
-    printk("Address: 0x%llx\n", (uint64_t)fb->address);
-    printk("Pitch: %u bytes\n\n", fb->pitch);
     
-    printk("Testing numbers:\n");
-    printk("  Decimal: %d\n", 42);
-    printk("  Hex (lower): 0x%x\n", 0xDEADBEEF);
-    printk("  Hex (upper): 0x%X\n", 0xCAFEBABE);
-    printk("  Pointer: %p\n", (void*)0x123456789ABC);
+    // Initialize CPU structures
+    gdt_init();
+    idt_init();
     
-    printk("\nKernel ready!\n");
+    printk("\n[KERNEL] All systems initialized!\n\n");
+    
+    // Test divide by zero exception
+
+    printk("Testing exception handling...\n");
+    // int x = 5 / 0;  // This will trigger ISR 0
+    
+    printk("Kernel ready. Halting...\n");
     
     hcf();
 }

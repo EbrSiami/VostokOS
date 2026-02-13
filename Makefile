@@ -3,6 +3,7 @@ ISO := image.iso
 
 CC := x86_64-elf-gcc
 LD := x86_64-elf-ld
+AS := x86_64-elf-as
 
 CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
           -mcmodel=kernel \
@@ -11,6 +12,8 @@ CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
           -fno-stack-check \
           -I.
 
+ASFLAGS := 
+
 LDFLAGS := -nostdlib -static -T linker.ld
 
 # Source files
@@ -18,32 +21,28 @@ KERNEL_SRC := kernel.c
 DISPLAY_SRC := display/framebuffer.c display/terminal.c
 FONT_SRC := font/font_data.c
 LIB_SRC := lib/string.c lib/printk.c
+ARCH_SRC := arch/gdt.c arch/idt.c
+ARCH_ASM := arch/gdt_asm.s arch/idt_asm.s
 
 # Object files
 KERNEL_OBJ := $(KERNEL_SRC:.c=.o)
 DISPLAY_OBJ := $(DISPLAY_SRC:.c=.o)
 FONT_OBJ := $(FONT_SRC:.c=.o)
 LIB_OBJ := $(LIB_SRC:.c=.o)
+ARCH_OBJ := $(ARCH_SRC:.c=.o)
+ARCH_ASM_OBJ := $(ARCH_ASM:.s=.o)
 
-ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ)
+ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ) $(ARCH_OBJ) $(ARCH_ASM_OBJ)
 
 all: $(ISO)
 
-# Compile kernel
-kernel.o: kernel.c
-	$(CC) $(CFLAGS) -c kernel.c -o kernel.o
-
-# Compile display modules
-display/%.o: display/%.c
+# Compile C files
+%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile font
-font/%.o: font/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Compile lib
-lib/%.o: lib/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# Compile assembly files
+%.o: %.s
+	$(AS) $(ASFLAGS) $< -o $@
 
 # Link kernel
 $(KERNEL): $(ALL_OBJ) linker.ld
@@ -66,6 +65,6 @@ run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -m 512M
 
 clean:
-	rm -rf *.o display/*.o font/*.o lib/*.o *.elf *.iso iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o *.elf *.iso iso_root
 
 .PHONY: all run clean
