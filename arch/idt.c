@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "pic.h"
 #include "../lib/printk.h"
 #include "../lib/string.h"
 
@@ -8,6 +9,24 @@ static struct idt_ptr idt_pointer;
 
 // External assembly function to load IDT
 extern void idt_flush(uint64_t idt_ptr);
+
+// IRQ handlers (32-47)
+extern void irq0(void);
+extern void irq1(void);
+extern void irq2(void);
+extern void irq3(void);
+extern void irq4(void);
+extern void irq5(void);
+extern void irq6(void);
+extern void irq7(void);
+extern void irq8(void);
+extern void irq9(void);
+extern void irq10(void);
+extern void irq11(void);
+extern void irq12(void);
+extern void irq13(void);
+extern void irq14(void);
+extern void irq15(void);
 
 // Exception handler declarations (implemented in idt_asm.s)
 extern void isr0(void);   // Divide by zero
@@ -80,6 +99,24 @@ void idt_init(void) {
     idt_set_gate(21, (uint64_t)isr21, 0x08, 0x8E);
     idt_set_gate(31, (uint64_t)isr31, 0x08, 0x8E);
     
+    // Set up IRQ handlers (IRQs 0-15 mapped to interrupts 32-47)
+    idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
+    idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
+    idt_set_gate(34, (uint64_t)irq2, 0x08, 0x8E);
+    idt_set_gate(35, (uint64_t)irq3, 0x08, 0x8E);
+    idt_set_gate(36, (uint64_t)irq4, 0x08, 0x8E);
+    idt_set_gate(37, (uint64_t)irq5, 0x08, 0x8E);
+    idt_set_gate(38, (uint64_t)irq6, 0x08, 0x8E);
+    idt_set_gate(39, (uint64_t)irq7, 0x08, 0x8E);
+    idt_set_gate(40, (uint64_t)irq8, 0x08, 0x8E);
+    idt_set_gate(41, (uint64_t)irq9, 0x08, 0x8E);
+    idt_set_gate(42, (uint64_t)irq10, 0x08, 0x8E);
+    idt_set_gate(43, (uint64_t)irq11, 0x08, 0x8E);
+    idt_set_gate(44, (uint64_t)irq12, 0x08, 0x8E);
+    idt_set_gate(45, (uint64_t)irq13, 0x08, 0x8E);
+    idt_set_gate(46, (uint64_t)irq14, 0x08, 0x8E);
+    idt_set_gate(47, (uint64_t)irq15, 0x08, 0x8E);
+
     // Load the IDT
     idt_flush((uint64_t)&idt_pointer);
     
@@ -128,5 +165,24 @@ void isr_handler(uint64_t isr_number, uint64_t error_code) {
     // Halt
     for (;;) {
         __asm__ volatile ("cli; hlt");
+    }
+}
+
+// IRQ handler (called from assembly)
+void irq_handler(uint64_t irq_number) {
+    // Send EOI to PIC
+    pic_send_eoi(irq_number);
+    
+    // Handle specific IRQs
+    switch (irq_number) {
+        case 0:  // Timer
+            // Timer handler will go here
+            break;
+        case 1:  // Keyboard
+            // Keyboard handler will go here
+            break;
+        default:
+            // Unhandled IRQ
+            break;
     }
 }

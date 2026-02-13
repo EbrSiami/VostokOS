@@ -6,6 +6,7 @@
 #include "lib/printk.h"
 #include "arch/gdt.h"
 #include "arch/idt.h"
+#include "arch/pic.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -37,13 +38,15 @@ void _start(void) {
     // Initialize CPU structures
     gdt_init();
     idt_init();
-    
+    // Remap PIC (IRQs 0-15 → interrupts 32-47)
+    pic_remap(32, 40);
+
+    // Enable interrupts
+    __asm__ volatile ("sti");
+
     printk("\n[KERNEL] All systems initialized!\n\n");
     
     // Test divide by zero exception
-
-    printk("Testing exception handling...\n");
-    // int x = 5 / 0;  // This will trigger ISR 0
     
     printk("Kernel ready. Halting...\n");
     
