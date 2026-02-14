@@ -2,6 +2,7 @@
 #include "pic.h"
 #include "../lib/printk.h"
 #include "../lib/string.h"
+#include "../drivers/keyboard.h"
 
 // IDT with 256 entries
 static struct idt_entry idt[256];
@@ -170,19 +171,22 @@ void isr_handler(uint64_t isr_number, uint64_t error_code) {
 
 // IRQ handler (called from assembly)
 void irq_handler(uint64_t irq_number) {
-    // Send EOI to PIC
-    pic_send_eoi(irq_number);
-    
-    // Handle specific IRQs
-    switch (irq_number) {
+    // irq_number is 32-47, need to convert to actual IRQ (0-15)
+    uint8_t actual_irq = irq_number - 32;
+
+    // Handle specific IRQs BEFORE sending EOI
+    switch (actual_irq) {
         case 0:  // Timer
             // Timer handler will go here
             break;
         case 1:  // Keyboard
-            // Keyboard handler will go here
+            keyboard_handler();
             break;
         default:
             // Unhandled IRQ
             break;
     }
+
+    // Send EOI to PIC
+    pic_send_eoi(actual_irq);  // Convert back to IRQ number (0-15)
 }

@@ -7,6 +7,7 @@
 #include "arch/gdt.h"
 #include "arch/idt.h"
 #include "arch/pic.h"
+#include "drivers/keyboard.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -41,14 +42,20 @@ void _start(void) {
     // Remap PIC (IRQs 0-15 → interrupts 32-47)
     pic_remap(32, 40);
 
+    // Initialize keyboard
+    keyboard_init();
+
+    // Unmask keyboard IRQ (IRQ 1)
+    pic_clear_mask(1);
+
     // Enable interrupts
     __asm__ volatile ("sti");
 
-    printk("\n[KERNEL] All systems initialized!\n\n");
+    printk("\n[KERNEL] Interrupts enabled!\n");
+    printk("Keyboard ready! Start typing:\n\n");
     
-    // Test divide by zero exception
-    
-    printk("Kernel ready. Halting...\n");
-    
-    hcf();
+    // dont halt - we wanna keep receiving interrupts!
+    for (;;) {
+        __asm__ volatile ("hlt");
+    }
 }

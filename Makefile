@@ -23,6 +23,8 @@ FONT_SRC := font/font_data.c
 LIB_SRC := lib/string.c lib/printk.c
 ARCH_SRC := arch/gdt.c arch/idt.c arch/pic.c
 ARCH_ASM := arch/gdt_asm.s arch/idt_asm.s
+# Add drivers directory
+DRIVERS_SRC := drivers/keyboard.c
 
 # Object files
 KERNEL_OBJ := $(KERNEL_SRC:.c=.o)
@@ -31,8 +33,10 @@ FONT_OBJ := $(FONT_SRC:.c=.o)
 LIB_OBJ := $(LIB_SRC:.c=.o)
 ARCH_OBJ := $(ARCH_SRC:.c=.o)
 ARCH_ASM_OBJ := $(ARCH_ASM:.s=.o)
+# add drivers to object files
+DRIVERS_OBJ := $(DRIVERS_SRC:.c=.o)
 
-ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ) $(ARCH_OBJ) $(ARCH_ASM_OBJ)
+ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ) $(ARCH_OBJ) $(ARCH_ASM_OBJ) $(DRIVERS_OBJ)
 
 all: $(ISO)
 
@@ -43,6 +47,10 @@ all: $(ISO)
 # Compile assembly files
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
+
+# Add compilation rule for drivers
+drivers/%.o: drivers/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link kernel
 $(KERNEL): $(ALL_OBJ) linker.ld
@@ -64,7 +72,8 @@ $(ISO): $(KERNEL) limine.conf
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -m 512M
 
+# update clean for drivers etc 
 clean:
-	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o *.elf *.iso iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o *.elf *.iso iso_root
 
 .PHONY: all run clean
