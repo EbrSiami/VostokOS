@@ -8,6 +8,7 @@
 #include "arch/idt.h"
 #include "arch/pic.h"
 #include "drivers/keyboard.h"
+#include "shell/shell.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -52,9 +53,11 @@ void _start(void) {
     __asm__ volatile ("sti");
 
     printk("\n[KERNEL] Interrupts enabled!\n");
-    printk("Keyboard ready! Start typing:\n\n");
+    printk("[KERNEL] System initialized successfully\n");
     
-    // dont halt - we wanna keep receiving interrupts!
+    shell_init();
+    
+    // Main loop - just wait for interrupts
     for (;;) {
         __asm__ volatile ("hlt");
     }

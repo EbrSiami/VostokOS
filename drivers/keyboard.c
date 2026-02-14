@@ -1,6 +1,7 @@
 #include "keyboard.h"
 #include "../lib/printk.h"
 #include "../display/terminal.h"
+#include "../shell/shell.h"
 
 // Helper to read from I/O port
 static inline uint8_t inb(uint16_t port) {
@@ -142,14 +143,15 @@ void keyboard_handler(void) {
         }
     }
     
-    // Print the character
+    // Print the character and pass to shell
     if (ascii == '\b') {
-        terminal_putchar(ascii);
+        shell_process_char(ascii);
     } else if (ascii == '\n') {
-        terminal_putchar(ascii);
+        shell_process_char(ascii);
     } else if (ascii == '\t') {
+        // Handle tab separately - shell doesn't need it for now
         terminal_write("    ");
     } else if (ascii != 0) {
-        terminal_putchar(ascii);
+        shell_process_char(ascii);
     }
 }

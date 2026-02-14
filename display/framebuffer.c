@@ -20,10 +20,10 @@ void fb_put_pixel(size_t x, size_t y, uint32_t color) {
 }
 
 void fb_clear(uint32_t color) {
-    for (size_t y = 0; y < fb.height; y++) {
-        for (size_t x = 0; x < fb.width; x++) {
-            fb_put_pixel(x, y, color);
-        }
+    size_t total_pixels = fb.width * fb.height;
+    uint32_t *dest = (uint32_t *)fb.address;
+    for (size_t i = 0; i < total_pixels; i++) {
+        dest[i] = color;
     }
 }
 
