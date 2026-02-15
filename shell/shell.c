@@ -168,9 +168,7 @@ void shell_process_char(char c) {
             buffer_pos--;
             command_buffer[buffer_pos] = '\0';
             
-            // Visual backspace: move cursor back, print space, move back again
-            terminal_putchar('\b');
-            terminal_putchar(' ');
+            // Just call backspace once - terminal handles it now
             terminal_putchar('\b');
         }
         

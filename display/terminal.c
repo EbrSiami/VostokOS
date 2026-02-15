@@ -36,10 +36,28 @@ static void scroll(void) {
     terminal_col = 0;
 }
 
+void terminal_backspace(void) {
+    if (terminal_col > 0) {
+        terminal_col--;
+        // Redraw current position with space (erase character)
+        draw_char(' ', terminal_col * FONT_WIDTH, terminal_row * FONT_HEIGHT);
+    } else if (terminal_row > 0) {
+        // Move to end of previous line
+        framebuffer_t *fb = fb_get();
+        terminal_row--;
+        terminal_col = (fb->width / FONT_WIDTH) - 1;
+    }
+}
+
 void terminal_putchar(char c) {
     framebuffer_t *fb = fb_get();
     size_t max_cols = fb->width / FONT_WIDTH;
     size_t max_rows = fb->height / FONT_HEIGHT;
+    
+    if (c == '\b') {
+        terminal_backspace();  // Use the new function
+        return;
+    }
     
     if (c == '\n') {
         terminal_col = 0;
