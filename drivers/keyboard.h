@@ -50,6 +50,8 @@ typedef struct {
 // Initialize keyboard driver
 void keyboard_init(void);
 
+void keyboard_set_leds(void);
+
 // Handle keyboard interrupt
 void keyboard_handler(void);
 

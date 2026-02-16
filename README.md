@@ -7,11 +7,12 @@ In fact, after 4 months of struggling with writing my own custom bootloader, I d
 
 the TODO list for now, i dont have much good memory :(
 
-    1- controlling the keyboard lights ( i mean capslook, numlock and scrolllock. YES theyre controlled by OS!)
-    2- a more modern reboot function. this keyboard way not much good. 
-    3- fixing backspace feature.
+    1- controlling the keyboard lights ( i mean capslook, numlock and scrolllock. YES theyre controlled by OS!) 
+    (FIXED commit 9)
+    2- a more modern reboot function. this keyboard way not much good.
+    3- fixing backspace feature (FIXED commit 7)
     4- Tab completion.
     5- Command history (up/down arrows).
     6- adding more commands such as meminfo, also modular commands system.
-    7- scrolling. 
+    7- scrolling. (Added meminfo by limine memory map so far);
     8- hmmmm ...

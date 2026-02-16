@@ -3,6 +3,7 @@
 #include "../lib/printk.h"
 #include "../lib/string.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/timer.h"
 
 // IDT with 256 entries
 static struct idt_entry idt[256];
@@ -177,7 +178,7 @@ void irq_handler(uint64_t irq_number) {
     // Handle specific IRQs BEFORE sending EOI
     switch (actual_irq) {
         case 0:  // Timer
-            // Timer handler will go here
+            timer_handler();
             break;
         case 1:  // Keyboard
             keyboard_handler();

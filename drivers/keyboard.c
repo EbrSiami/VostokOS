@@ -73,6 +73,27 @@ keyboard_state_t* keyboard_get_state(void) {
     return &kb_state;
 }
 
+// Set keyboard LEDs
+void keyboard_set_leds(void) {
+    uint8_t led_state = 0;
+    
+    if (kb_state.scroll_lock) led_state |= 0x01;
+    if (kb_state.num_lock)    led_state |= 0x02;
+    if (kb_state.caps_lock)   led_state |= 0x04;
+    
+    // Send LED command
+    outb(KEYBOARD_DATA_PORT, 0xED);
+    
+    // Wait for acknowledgment
+    for (volatile int i = 0; i < 10000; i++);
+    
+    // Send LED state
+    outb(KEYBOARD_DATA_PORT, led_state);
+    
+    // Wait for acknowledgment
+    for (volatile int i = 0; i < 10000; i++);
+}
+
 void keyboard_handler(void) {
     // Check if data is actually available
     uint8_t status = inb(KEYBOARD_STATUS_PORT);
@@ -106,16 +127,19 @@ void keyboard_handler(void) {
     if (!key_released) {
         if (scancode == KEY_CAPSLOCK) {
             kb_state.caps_lock = !kb_state.caps_lock;
+            keyboard_set_leds();  // Update LEDs
             return;
         }
         
         if (scancode == KEY_NUMLOCK) {
             kb_state.num_lock = !kb_state.num_lock;
+            keyboard_set_leds();  // Update LEDs
             return;
         }
         
         if (scancode == KEY_SCROLLLOCK) {
             kb_state.scroll_lock = !kb_state.scroll_lock;
+            keyboard_set_leds();  // Update LEDs
             return;
         }
     }

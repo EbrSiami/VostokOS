@@ -20,10 +20,10 @@ LDFLAGS := -nostdlib -static -T linker.ld
 KERNEL_SRC := kernel.c
 DISPLAY_SRC := display/framebuffer.c display/terminal.c
 FONT_SRC := font/font_data.c
-LIB_SRC := lib/string.c lib/printk.c
+LIB_SRC := lib/string.c lib/printk.c lib/memory.c
 ARCH_SRC := arch/gdt.c arch/idt.c arch/pic.c
 ARCH_ASM := arch/gdt_asm.s arch/idt_asm.s
-DRIVERS_SRC := drivers/keyboard.c
+DRIVERS_SRC := drivers/keyboard.c drivers/timer.c
 SHELL_SRC := shell/shell.c
 
 # Object files

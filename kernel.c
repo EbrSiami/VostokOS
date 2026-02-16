@@ -9,12 +9,25 @@
 #include "arch/pic.h"
 #include "drivers/keyboard.h"
 #include "shell/shell.h"
+#include "drivers/timer.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0
 };
+
+__attribute__((used, section(".requests")))
+static volatile struct limine_memmap_request memmap_request = {
+    .id = LIMINE_MEMMAP_REQUEST,
+    .revision = 0
+};
+
+static struct limine_memmap_response *memmap_response = NULL;
+
+struct limine_memmap_response* get_memory_map(void) {
+    return memmap_response;
+}
 
 static void hcf(void) {
     __asm__ ("cli");
@@ -27,6 +40,10 @@ void _start(void) {
     if (framebuffer_request.response == NULL || 
         framebuffer_request.response->framebuffer_count < 1) {
         hcf();
+    }
+
+    if (memmap_request.response != NULL) {
+        memmap_response = (struct limine_memmap_response*)memmap_request.response;
     }
 
     struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
@@ -46,8 +63,11 @@ void _start(void) {
     // Initialize keyboard
     keyboard_init();
 
-    // Unmask keyboard IRQ (IRQ 1)
-    pic_clear_mask(1);
+    timer_init(100);  // 100 Hz (10ms per tick)
+    
+    // Unmask keyboard and timer IRQs
+    pic_clear_mask(0);  // Timer
+    pic_clear_mask(1);  // Keyboard
 
     // Enable interrupts
     __asm__ volatile ("sti");

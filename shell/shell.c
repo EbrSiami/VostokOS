@@ -1,7 +1,10 @@
 #include "shell.h"
+#include "../limine.h"
 #include "../lib/string.h"
 #include "../lib/printk.h"
+#include "../lib/memory.h"
 #include "../display/terminal.h"
+#include "../drivers/timer.h"
 
 // Command buffer
 static char command_buffer[SHELL_BUFFER_SIZE];
@@ -16,6 +19,8 @@ static void cmd_clear(int argc, char **argv);
 static void cmd_echo(int argc, char **argv);
 static void cmd_info(int argc, char **argv);
 static void cmd_reboot(int argc, char **argv);
+static void cmd_uptime(int argc, char **argv);
+static void cmd_meminfo(int argc, char **argv);
 
 // Command structure
 typedef struct {
@@ -31,6 +36,8 @@ static shell_command_t commands[] = {
     {"echo",    "Print arguments to screen",               cmd_echo},
     {"info",    "Display system information",              cmd_info},
     {"reboot",  "Reboot the system",                       cmd_reboot},
+    {"uptime",  "Display system uptime",                   cmd_uptime},
+    {"meminfo", "Display memory information",              cmd_meminfo},
     {NULL, NULL, NULL}  // Sentinel
 };
 
@@ -102,33 +109,48 @@ static void cmd_info(int argc, char **argv) {
     printk("\n");
 }
 
+static void cmd_uptime(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+    
+    uint64_t uptime = timer_get_uptime();
+    uint64_t hours = uptime / 3600;
+    uint64_t minutes = (uptime % 3600) / 60;
+    uint64_t seconds = uptime % 60;
+    
+    printk("Uptime: %llu hours, %llu minutes, %llu seconds\n", 
+           hours, minutes, seconds);
+    printk("Total ticks: %llu\n", timer_get_ticks());
+}
+
 static void cmd_reboot(int argc, char **argv) {
     (void)argc;
     (void)argv;
     
     printk("Rebooting...\n");
-    
-    // Give time for message to display
     for (volatile int i = 0; i < 10000000; i++);
     
-    // Use keyboard controller to reboot (classic method)
-    uint8_t temp;
-    __asm__ volatile ("cli");  // Disable interrupts
+    __asm__ volatile ("cli");
     
-    // Clear keyboard controller
+    // Method 1: Keyboard controller (most compatible)
+    uint8_t temp;
     do {
         __asm__ volatile ("inb $0x64, %0" : "=a"(temp));
         if (temp & 0x01) {
             __asm__ volatile ("inb $0x60, %0" : "=a"(temp));
         }
     } while (temp & 0x02);
-    
-    // Send reboot command
     __asm__ volatile ("outb %0, $0x64" : : "a"((uint8_t)0xFE));
     
-    // If that didn't work, triple fault
+    // Method 2: Triple fault (if keyboard fails)
+    uint16_t *invalid_idt = (uint16_t*)0x0;
+    invalid_idt[0] = 0;
+    __asm__ volatile ("lidt (%0)" : : "r"(invalid_idt));
+    __asm__ volatile ("int $0x00");
+    
+    // Method 3: Just halt if all else fails
     for (;;) {
-        __asm__ volatile ("cli; hlt");
+        __asm__ volatile ("hlt");
     }
 }
 
@@ -216,4 +238,73 @@ void shell_execute(const char *command) {
     // Command not found
     printk("Unknown command: %s\n", argv[0]);
     printk("Type 'help' for available commands.\n");
+}
+
+static void cmd_meminfo(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+    
+    struct limine_memmap_response *memmap = get_memory_map();
+    
+    if (memmap == NULL) {
+        printk("Error: Memory map not available\n");
+        return;
+    }
+    
+    uint64_t total_mem = get_total_memory();
+    uint64_t usable_mem = get_usable_memory();
+    
+    printk("\n=== Memory Information ===\n");
+    printk("Total Memory:  %llu MB (%llu KB)\n", 
+           total_mem / (1024 * 1024), total_mem / 1024);
+    printk("Usable Memory: %llu MB (%llu KB)\n", 
+           usable_mem / (1024 * 1024), usable_mem / 1024);
+    printk("Reserved:      %llu MB\n\n", 
+           (total_mem - usable_mem) / (1024 * 1024));
+    
+    printk("Memory Map (%llu entries):\n", memmap->entry_count);
+    
+    for (uint64_t i = 0; i < memmap->entry_count; i++) {
+        struct limine_memmap_entry *entry = memmap->entries[i];
+        
+        const char *type_str;
+        switch (entry->type) {
+            case LIMINE_MEMMAP_USABLE:
+                type_str = "Usable";
+                break;
+            case LIMINE_MEMMAP_RESERVED:
+                type_str = "Reserved";
+                break;
+            case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
+                type_str = "ACPI Reclaimable";
+                break;
+            case LIMINE_MEMMAP_ACPI_NVS:
+                type_str = "ACPI NVS";
+                break;
+            case LIMINE_MEMMAP_BAD_MEMORY:
+                type_str = "Bad Memory";
+                break;
+            case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
+                type_str = "Bootloader";
+                break;
+            case LIMINE_MEMMAP_KERNEL_AND_MODULES:
+                type_str = "Kernel";
+                break;
+            case LIMINE_MEMMAP_FRAMEBUFFER:
+                type_str = "Framebuffer";
+                break;
+            default:
+                type_str = "Unknown";
+                break;
+        }
+        
+        printk("  [%llu] 0x%llx - 0x%llx (%llu KB) - %s\n",
+               i,
+               entry->base,
+               entry->base + entry->length,
+               entry->length / 1024,
+               type_str);
+    }
+    
+    printk("\n");
 }
