@@ -21,4 +21,15 @@ uint64_t timer_get_ticks(void);
 // Get uptime in seconds
 uint64_t timer_get_uptime(void);
 
+// get uptime in milliseconds (more precise)
+uint64_t timer_get_uptime_ms(void);
+
+// NEW: Sleep functions (blocks execution)
+void timer_sleep(uint32_t seconds);
+void timer_sleep_ms(uint32_t milliseconds);
+void timer_wait_ticks(uint64_t ticks);
+
+// NEW: Get the timer frequency
+uint32_t timer_get_frequency(void);
+
 #endif

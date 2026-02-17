@@ -37,3 +37,36 @@ uint64_t timer_get_ticks(void) {
 uint64_t timer_get_uptime(void) {
     return timer_ticks / timer_frequency;
 }
+
+// get uptime in milliseconds (more precise!)
+uint64_t timer_get_uptime_ms(void) {
+    return (timer_ticks * 1000) / timer_frequency;
+}
+
+// sleep for specified milliseconds
+void timer_sleep_ms(uint32_t ms) {
+    uint64_t target_ticks = timer_ticks + (ms * timer_frequency) / 1000;
+    
+    // Busy wait (will be replaced with proper scheduling later)
+    while (timer_ticks < target_ticks) {
+        __asm__ volatile ("hlt");  // Halt until next interrupt
+    }
+}
+
+// sleep for specified seconds
+void timer_sleep(uint32_t seconds) {
+    timer_sleep_ms(seconds * 1000);
+}
+
+// wait for specified number of ticks
+void timer_wait_ticks(uint64_t ticks) {
+    uint64_t target = timer_ticks + ticks;
+    while (timer_ticks < target) {
+        __asm__ volatile ("hlt");
+    }
+}
+
+// get frequency
+uint32_t timer_get_frequency(void) {
+    return timer_frequency;
+}

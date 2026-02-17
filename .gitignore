@@ -1,5 +1,6 @@
 *.o
 *.elf
 *.iso
+myway.md
 iso_root/
 limine/
