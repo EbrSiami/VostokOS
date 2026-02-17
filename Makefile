@@ -5,7 +5,11 @@ CC := x86_64-elf-gcc
 LD := x86_64-elf-ld
 AS := x86_64-elf-as
 
+# note i'll turn off the AVX, SSE for now. 
+
 CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
+          -march=x86-64 -mno-avx -mno-avx2 \
+		  -mno-avx512f -fno-tree-vectorize \
           -mcmodel=kernel \
           -mno-red-zone \
           -fno-stack-protector \

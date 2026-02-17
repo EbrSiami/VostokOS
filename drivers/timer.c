@@ -49,6 +49,7 @@ void timer_sleep_ms(uint32_t ms) {
     
     // Busy wait (will be replaced with proper scheduling later)
     while (timer_ticks < target_ticks) {
+        __asm__ volatile ("sti");
         __asm__ volatile ("hlt");  // Halt until next interrupt
     }
 }
@@ -62,6 +63,7 @@ void timer_sleep(uint32_t seconds) {
 void timer_wait_ticks(uint64_t ticks) {
     uint64_t target = timer_ticks + ticks;
     while (timer_ticks < target) {
+        __asm__ volatile ("sti");
         __asm__ volatile ("hlt");
     }
 }

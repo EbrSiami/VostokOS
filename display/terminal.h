@@ -10,6 +10,7 @@ void terminal_putchar(char c);
 void terminal_write(const char *str);
 void terminal_clear(void);
 void terminal_set_color(uint32_t fg, uint32_t bg);
+void terminal_put_repeated(char c, size_t count);
 
 // New scrolling functions
 void terminal_scroll_up(void);    // Scroll view up (see older content)

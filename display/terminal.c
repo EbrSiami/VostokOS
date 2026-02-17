@@ -44,7 +44,6 @@ void terminal_init(void) {
 
 static void draw_char(char c, size_t x, size_t y) {
     unsigned char uc = (unsigned char)c;
-    if (uc >= 128) uc = '?';
     
     for (size_t row = 0; row < FONT_HEIGHT; row++) {
         uint8_t font_row = font_data[uc][row];
@@ -260,4 +259,10 @@ void terminal_clear(void) {
 void terminal_set_color(uint32_t fg, uint32_t bg) {
     fg_color = fg;
     bg_color = bg;
+}
+
+void terminal_put_repeated(char c, size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        terminal_putchar(c);
+    }
 }

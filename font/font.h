@@ -6,6 +6,7 @@
 #define FONT_WIDTH 8
 #define FONT_HEIGHT 8
 
-extern const uint8_t font_data[128][8];
+#define FONT_CHARS 256
+extern const uint8_t font_data[FONT_CHARS][8];
 
 #endif
