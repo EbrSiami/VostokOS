@@ -2,5 +2,7 @@
 *.elf
 *.iso
 myway.md
+all_os_code.py
+all_os_code.txt
 iso_root/
 limine/

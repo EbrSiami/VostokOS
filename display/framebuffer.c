@@ -1,4 +1,5 @@
 #include "framebuffer.h"
+#include "../lib/string.h"
 
 static framebuffer_t fb;
 
@@ -20,6 +21,11 @@ void fb_put_pixel(size_t x, size_t y, uint32_t color) {
 }
 
 void fb_clear(uint32_t color) {
+    if (color == 0) {
+        memset(fb.address, 0, fb.width * fb.height * 4);
+        return;
+    }
+
     size_t total_pixels = fb.width * fb.height;
     uint32_t *dest = (uint32_t *)fb.address;
     for (size_t i = 0; i < total_pixels; i++) {

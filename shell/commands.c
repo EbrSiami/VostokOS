@@ -309,8 +309,9 @@ void cmd_meminfo(int argc, char **argv) {
     printk("Memory Map:\n");
     printk("  %-4s %-18s %-18s %-10s %s\n", 
            "#", "Base", "End", "Size", "Type");
-    printk("  %s\n", "────────────────────────────────────────────────────────────────");
-    
+    printk("  ");
+    terminal_put_repeated('\xC4', 60);  // CP437 single horizontal
+    printk("\n");
     for (uint64_t i = 0; i < memmap->entry_count && i < 15; i++) {
         struct limine_memmap_entry *entry = memmap->entries[i];
         

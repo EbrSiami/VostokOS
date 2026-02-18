@@ -5,6 +5,12 @@ SECTIONS
     /* Higher half kernel base */
     . = 0xffffffff80000000;
 
+    .requests ALIGN(4K) : {
+        KEEP(*(.requests_start_marker))
+        KEEP(*(.requests))
+        KEEP(*(.requests_end_marker))
+    }
+
     .text ALIGN(4K) : {
         *(.text .text.*)
     }
@@ -17,12 +23,7 @@ SECTIONS
         *(.data .data.*)
     }
     
-    /* Limine requests section - CRITICAL for bootloader */
-    .requests ALIGN(4K) : {
-        KEEP(*(.requests_start_marker))
-        KEEP(*(.requests))
-        KEEP(*(.requests_end_marker))
-    }
+
 
     .bss ALIGN(4K) : {
         *(COMMON)

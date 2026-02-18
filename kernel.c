@@ -23,6 +23,14 @@ static volatile struct limine_memmap_request memmap_request = {
     .revision = 0
 };
 
+__attribute__((used, section(".requests")))
+static volatile struct limine_hhdm_request hhdm_request = {
+    .id = LIMINE_HHDM_REQUEST,
+    .revision = 0
+};
+
+uint64_t hhdm_offset = 0;
+
 static struct limine_memmap_response *memmap_response = NULL;
 
 struct limine_memmap_response* get_memory_map(void) {
@@ -37,6 +45,7 @@ static void hcf(void) {
 }
 
 void _start(void) {
+
     if (framebuffer_request.response == NULL || 
         framebuffer_request.response->framebuffer_count < 1) {
         hcf();
@@ -54,6 +63,19 @@ void _start(void) {
     
     printk("=== VostokOS Kernel ===\n\n");
     
+    if (hhdm_request.response != NULL) {
+        hhdm_offset = hhdm_request.response->offset;
+        printk("[KERNEL] HHDM Offset: 0x%llx\n", hhdm_offset);
+    } else {
+        printk("[ERROR] HHDM response is NULL! System halted.\n");
+        hcf();
+    }
+
+    if (memmap_request.response != NULL) {
+        memmap_response = (struct limine_memmap_response*)memmap_request.response;
+        printk("[KERNEL] Memory map retrieved.\n");
+    }
+
     // Initialize CPU structures
     gdt_init();
     idt_init();

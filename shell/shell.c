@@ -33,11 +33,6 @@ static shell_command_t commands[] = {
     {NULL, NULL, NULL}  // Sentinel
 };
 
-// i'll add this that cmd_help can access to the commands list
-shell_command_t* shell_get_commands(void) {
-    return commands;
-}
-
 // Add command to history
 void add_to_history(const char *cmd) {
     if (strlen(cmd) == 0) return;
