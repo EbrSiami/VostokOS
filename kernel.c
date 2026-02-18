@@ -10,6 +10,7 @@
 #include "drivers/keyboard.h"
 #include "shell/shell.h"
 #include "drivers/timer.h"
+#include "mm/pmm.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -74,6 +75,14 @@ void _start(void) {
     if (memmap_request.response != NULL) {
         memmap_response = (struct limine_memmap_response*)memmap_request.response;
         printk("[KERNEL] Memory map retrieved.\n");
+    }
+
+        if (memmap_response != NULL) {
+        printk("[KERNEL] Initializing PMM...\n");
+        pmm_init(memmap_response, hhdm_offset);
+    } else {
+        printk("[ERROR] Memory map is NULL! Cannot init PMM.\n");
+        hcf();
     }
 
     // Initialize CPU structures
