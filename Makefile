@@ -28,7 +28,7 @@ LIB_SRC := lib/string.c lib/printk.c lib/memory.c
 ARCH_SRC := arch/gdt.c arch/idt.c arch/pic.c
 ARCH_ASM := arch/gdt_asm.s arch/idt_asm.s
 DRIVERS_SRC := drivers/keyboard.c drivers/timer.c
-SHELL_SRC := shell/shell.c
+SHELL_SRC := shell/shell.c shell/commands.c
 
 # Object files
 KERNEL_OBJ := $(KERNEL_SRC:.c=.o)
