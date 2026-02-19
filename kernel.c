@@ -11,6 +11,7 @@
 #include "shell/shell.h"
 #include "drivers/timer.h"
 #include "mm/pmm.h"
+#include "mm/vmm.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -85,6 +86,10 @@ void _start(void) {
         hcf();
     }
 
+    // Initialize VMM
+    printk("[KERNEL] Initializing VMM...\n");
+    vmm_init();
+    
     // Initialize CPU structures
     gdt_init();
     idt_init();
