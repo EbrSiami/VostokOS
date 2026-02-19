@@ -12,6 +12,7 @@
 #include "drivers/timer.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
+#include "lib/panic.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
