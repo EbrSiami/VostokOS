@@ -14,6 +14,7 @@
 #include "mm/vmm.h"
 #include "lib/panic.h"
 #include "mm/heap.h"
+#include "drivers/acpi.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -95,6 +96,10 @@ void _start(void) {
     // Initialize Heap
     printk("[KERNEL] Initializing Heap...\n");
     kheap_init();
+
+    // Initialize ACPI
+    printk("[KERNEL] Initializing ACPI...\n");
+    acpi_init();
 
     // Initialize CPU structures
     gdt_init();

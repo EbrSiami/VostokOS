@@ -27,7 +27,7 @@ FONT_SRC := font/font_data.c
 LIB_SRC := lib/string.c lib/printk.c lib/memory.c lib/bitmap.c lib/panic.c lib/spinlock.c
 ARCH_SRC := arch/gdt.c arch/idt.c arch/pic.c
 ARCH_ASM := arch/gdt_asm.s arch/idt_asm.s
-DRIVERS_SRC := drivers/keyboard.c drivers/timer.c
+DRIVERS_SRC := drivers/keyboard.c drivers/timer.c drivers/acpi.c
 SHELL_SRC := shell/shell.c shell/commands.c
 MM_SRC := mm/pmm.c mm/vmm.c mm/heap.c
 

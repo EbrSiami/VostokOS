@@ -28,7 +28,7 @@ void spinlock_release(spinlock_t* lock) {
     __atomic_clear(&lock->locked, __ATOMIC_RELEASE);
     
     // 2. Re-enable interrupts
-    // WARNING: In a real nested lock scenario, you'd check if IF was set before.
+    // WARNING : In a real nested lock scenario, we'd check if IF was set before.
     // For now, we assume we always want interrupts back on.
     __asm__ volatile("sti");
 }
