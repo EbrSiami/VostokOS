@@ -13,6 +13,7 @@
 #include "mm/pmm.h"
 #include "mm/vmm.h"
 #include "lib/panic.h"
+#include "mm/heap.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -91,6 +92,10 @@ void _start(void) {
     printk("[KERNEL] Initializing VMM...\n");
     vmm_init();
     
+    // Initialize Heap
+    printk("[KERNEL] Initializing Heap...\n");
+    kheap_init();
+
     // Initialize CPU structures
     gdt_init();
     idt_init();
