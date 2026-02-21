@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define KB_BUFFER_SIZE 256
+
 // Keyboard data port
 #define KEYBOARD_DATA_PORT      0x60
 #define KEYBOARD_STATUS_PORT    0x64
@@ -57,5 +59,8 @@ void keyboard_handler(void);
 
 // Get keyboard state
 keyboard_state_t* keyboard_get_state(void);
+
+bool keyboard_has_char(void);
+char keyboard_get_char(void);
 
 #endif

@@ -3,6 +3,10 @@
 #include "../display/terminal.h"
 #include "../shell/shell.h"
 
+static char kb_buffer[KB_BUFFER_SIZE];
+static volatile int kb_head = 0;
+static volatile int kb_tail = 0;
+
 // Helper to read from I/O port
 static inline uint8_t inb(uint16_t port) {
     uint8_t value;
@@ -167,15 +171,22 @@ void keyboard_handler(void) {
         }
     }
     
-    // Print the character and pass to shell
-    if (ascii == '\b') {
-        shell_process_char(ascii);
-    } else if (ascii == '\n') {
-        shell_process_char(ascii);
-    } else if (ascii == '\t') {
-        // Handle tab separately - shell doesn't need it for now
-        terminal_write("    ");
-    } else if (ascii != 0) {
-        shell_process_char(ascii);
+    if (ascii != 0) {
+        int next_head = (kb_head + 1) % KB_BUFFER_SIZE;
+        if (next_head != kb_tail) { // If buffer is not full
+            kb_buffer[kb_head] = ascii;
+            kb_head = next_head;
+        }
     }
+}
+
+bool keyboard_has_char(void) {
+    return kb_head != kb_tail;
+}
+
+char keyboard_get_char(void) {
+    if (kb_head == kb_tail) return 0;
+    char c = kb_buffer[kb_tail];
+    kb_tail = (kb_tail + 1) % KB_BUFFER_SIZE;
+    return c;
 }

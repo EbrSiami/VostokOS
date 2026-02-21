@@ -129,6 +129,12 @@ void apic_init(void) {
                     ioapic_id = io->ioapic_id;
                     printk("[APIC] IOAPIC found at %p (ID: %d) for CPU ID: %d\n", 
                            ioapic_base, ioapic_id, apic_get_id());
+
+                    uint32_t ioapic_ver = ioapic_read(IOAPICVER);
+                    uint8_t max_redir = (ioapic_ver >> 16) & 0xFF;
+                    printk("[APIC] IOAPIC version: %d, Max redirection entries: %d\n", 
+                           ioapic_ver & 0xFF, max_redir + 1);
+
                 }
                 break;
             }
