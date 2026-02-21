@@ -4,6 +4,7 @@
 #include "../lib/memory.h"
 #include "../display/terminal.h"
 #include "../drivers/timer.h"
+#include "../drivers/acpi.h"
 #include "../limine.h"
 
 void draw_shell_box(const char* title) {
@@ -74,18 +75,10 @@ void cmd_info(int argc, char **argv) {
     printk("\n");
 
     printk("  OS Name:       VostokOS\n");
-    printk("  Version:       0.1.8-dev\n");
+    printk("  Version:       0.2.0-dev\n");
     printk("  Architecture:  x86_64\n");
     printk("  Bootloader:    Limine\n");
     printk("  Author:        Ebrahim Siami \n");
-    
-    printk("\n  Features:\n");
-    printk("    \xFB Framebuffer graphics\n");
-    printk("    \xFB Interrupt handling (GDT/IDT)\n");
-    printk("    \xFB PS/2 Keyboard driver\n");
-    printk("    \xFB PIT Timer (%u Hz)\n", timer_get_frequency());
-    printk("    \xFB Terminal with scrollback\n");
-    printk("    \xFB Advanced shell\n");
     
     terminal_set_color(0x00FF00, 0x000000);
     printk("\n  FREE PALESTINE! \n");
@@ -242,25 +235,53 @@ void cmd_history(int argc, char **argv) {
     printk("\n");
 }
 
-void cmd_reboot(int argc, char **argv) {
+void cmd_shutdown(int argc, char **argv) {
     (void)argc;
     (void)argv;
-    
-    draw_shell_box("System Reboot");
-    
+
+    draw_shell_box("System Shutdown");
+
     printk("Shutting down VostokOS");
-    
     for (int i = 0; i < 3; i++) {
         timer_sleep(1);
         printk(".");
     }
-    
+    printk("\n\nPowering off now...\n\n");
+    timer_sleep(1);
+
+    __asm__ volatile ("cli");
+
+    // Method 1: ACPI shutdown
+    acpi_shutdown();
+
+    // Method 2: QEMU/Bochs debug exit port (useful during development)
+    __asm__ volatile ("outw %0, %1" : : "a"((uint16_t)0x2000), "Nd"((uint16_t)0x604));
+
+    // If we're still alive, nothing worked
+    printk("[SHUTDOWN] All shutdown methods failed. Please power off manually.\n");
+    for (;;) __asm__ volatile ("cli; hlt");
+}
+
+void cmd_reboot(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+
+    draw_shell_box("System Reboot");
+
+    printk("Preparing to reboot");
+    for (int i = 0; i < 3; i++) {
+        timer_sleep(1);
+        printk(".");
+    }
     printk("\n\nRebooting now...\n\n");
     timer_sleep(1);
-    
+
     __asm__ volatile ("cli");
-    
-    // Method 1: Keyboard controller
+
+    // Method 1: ACPI reboot (cleanest)
+    acpi_reboot();
+
+    // Method 2: Keyboard controller (8042 reset line)
     uint8_t temp;
     do {
         __asm__ volatile ("inb $0x64, %0" : "=a"(temp));
@@ -269,17 +290,14 @@ void cmd_reboot(int argc, char **argv) {
         }
     } while (temp & 0x02);
     __asm__ volatile ("outb %0, $0x64" : : "a"((uint8_t)0xFE));
-    
-    // Method 2: Triple fault
+
+    // Method 3: Triple fault
     uint16_t *invalid_idt = (uint16_t*)0x0;
     invalid_idt[0] = 0;
     __asm__ volatile ("lidt (%0)" : : "r"(invalid_idt));
     __asm__ volatile ("int $0x00");
-    
-    // Halt if all else fails
-    for (;;) {
-        __asm__ volatile ("hlt");
-    }
+
+    for (;;) __asm__ volatile ("hlt");
 }
 
 void cmd_meminfo(int argc, char **argv) {

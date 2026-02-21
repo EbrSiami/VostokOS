@@ -124,17 +124,13 @@ void _start(void) {
     
     // Main loop - just wait for interrupts
     for (;;) {
-        // Disable interrupts briefly while checking the buffer to prevent race conditions
         __asm__ volatile ("cli");
-        bool has_key = keyboard_has_char();
-        __asm__ volatile ("sti");
-
-        if (has_key) {
+        if (keyboard_has_char()) {
+            __asm__ volatile ("sti"); // Re-enable safely
             char c = keyboard_get_char();
             shell_process_char(c);
         } else {
-            // Sleep CPU until the next interrupt fires
-            __asm__ volatile ("hlt");
+            __asm__ volatile ("sti; hlt"); 
         }
     }
 }

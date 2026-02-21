@@ -22,6 +22,7 @@ static shell_command_t commands[] = {
     {"clear",     "Clear the screen",                    cmd_clear},
     {"echo",      "Print arguments to screen",           cmd_echo},
     {"info",      "Display system information",          cmd_info},
+    {"shutdown",  "Shutdown the system",                 cmd_shutdown},
     {"reboot",    "Reboot the system",                   cmd_reboot},
     {"uptime",    "Display system uptime",               cmd_uptime},
     {"meminfo",   "Display memory information",          cmd_meminfo},
@@ -80,7 +81,7 @@ void shell_init(void) {
     // Cool startup banner
     terminal_set_color(0x00FFFF, 0x000000);  // Cyan
     printk("\n");
-    draw_shell_box("Welcome to VostokOS v0.1.8");
+    draw_shell_box("Welcome to VostokOS v0.2.0");
     terminal_set_color(0xFFFFFF, 0x000000);  // White
     
     printk("\n");

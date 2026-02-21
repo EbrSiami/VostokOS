@@ -27,6 +27,7 @@ void cmd_help(int argc, char **argv);
 void cmd_clear(int argc, char **argv);
 void cmd_echo(int argc, char **argv);
 void cmd_info(int argc, char **argv);
+void cmd_shutdown(int argc, char **argv);
 void cmd_reboot(int argc, char **argv);
 void cmd_uptime(int argc, char **argv);
 void cmd_meminfo(int argc, char **argv);

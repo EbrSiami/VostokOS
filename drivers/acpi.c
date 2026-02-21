@@ -33,6 +33,14 @@ static inline void* p2v(uint64_t phys) {
     return (void*)(phys + hhdm_offset);
 }
 
+static inline void outw(uint16_t port, uint16_t value) {
+    __asm__ volatile ("outw %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline void outb(uint16_t port, uint8_t value) {
+    __asm__ volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+}
+
 void acpi_init(void) {
     if (rsdp_request.response == NULL || rsdp_request.response->address == NULL) {
         panic("ACPI: RSDP not found via Limine!");
@@ -95,4 +103,45 @@ found:
         return NULL;
     }
     return (void*)header;
+}
+
+void acpi_reboot(void) {
+    acpi_fadt_t* fadt = (acpi_fadt_t*)acpi_find_table("FACP"); // FADT signature is "FACP"
+    if (!fadt) {
+        printk("[ACPI] FADT not found, cannot perform ACPI reboot!\n");
+        return;
+    }
+
+    // Check if ACPI reboot is supported (Bit 10 of flags)
+    if (!(fadt->flags & (1 << 10))) {
+        printk("[ACPI] Hardware doesn't support ACPI reboot.\n");
+        return;
+    }
+
+    uint8_t reset_value = fadt->reset_value;
+    uint64_t reset_port = fadt->reset_reg.address;
+
+    // Address space 1 means System I/O
+    if (fadt->reset_reg.address_space == 1) {
+        __asm__ volatile("outb %0, %1" :: "a"(reset_value), "Nd"((uint16_t)reset_port));
+    }
+    
+    // Fallback: Spin
+    for(;;) __asm__("hlt");
+}
+
+void acpi_shutdown(void) {
+    acpi_fadt_t* fadt = (acpi_fadt_t*)acpi_find_table("FACP");
+    if (!fadt) return;
+
+    // Send the shutdown command to the PM1a Control Block
+    uint16_t slp_typ = 0; // i'm going to use 0 for now. soon i'll add AML Parser lol. 
+    uint16_t pm1a_cnt = fadt->pm1a_control_block;
+    
+    if (pm1a_cnt != 0) {
+        outw(pm1a_cnt, (uint16_t)((slp_typ << 10) | (1 << 13)));
+    }
+    
+    printk("[ACPI] Shutdown failed. Power off manually.\n");
+    for(;;) __asm__("cli; hlt");
 }
