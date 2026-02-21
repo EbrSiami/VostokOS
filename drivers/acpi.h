@@ -66,6 +66,7 @@ typedef struct {
     uint8_t century;
     uint16_t boot_architecture_flags;
     uint8_t reserved2;
+    uint8_t padding[48];
     uint32_t flags;
     acpi_gas_t reset_reg;
     uint8_t reset_value;

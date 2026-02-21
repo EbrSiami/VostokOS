@@ -8,8 +8,9 @@ In fact, after 4 months of struggling with writing my own custom bootloader, I d
 the TODO list for now, i dont have much good memory :(
 
     1- ctrl+c
-    2- a more modern reboot and shutdown function by ACPI. this keyboard way not much good.
+    2- Implement AML parser
     3- Tab completion.
     4- Command history (up/down arrows).
-    5- modular shell and commands.
-    6- hmmmm ...
+    5- modular shell and commands. (i did it somehow but not fully)
+    6- USB
+    7- supporting file systems

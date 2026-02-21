@@ -15,6 +15,7 @@
 #include "lib/panic.h"
 #include "mm/heap.h"
 #include "drivers/acpi.h"
+#include "drivers/pci.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -108,6 +109,9 @@ void _start(void) {
     // Initialize APIC
     printk("[KERNEL] Initializing APIC...\n");
     apic_init();
+
+    printk("[KERNEL] Initializing PCI...\n");
+    pci_init();
 
     // Initialize keyboard
     keyboard_init();

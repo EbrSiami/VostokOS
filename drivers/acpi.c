@@ -106,9 +106,9 @@ found:
 }
 
 void acpi_reboot(void) {
-    acpi_fadt_t* fadt = (acpi_fadt_t*)acpi_find_table("FACP"); // FADT signature is "FACP"
+    acpi_fadt_t* fadt = (acpi_fadt_t*)acpi_find_table("FACP");
     if (!fadt) {
-        printk("[ACPI] FADT not found, cannot perform ACPI reboot!\n");
+        printk("[ACPI] FADT not found, cannot reboot!\n");
         return;
     }
 
@@ -118,30 +118,24 @@ void acpi_reboot(void) {
         return;
     }
 
-    uint8_t reset_value = fadt->reset_value;
-    uint64_t reset_port = fadt->reset_reg.address;
-
     // Address space 1 means System I/O
     if (fadt->reset_reg.address_space == 1) {
-        __asm__ volatile("outb %0, %1" :: "a"(reset_value), "Nd"((uint16_t)reset_port));
+        uint16_t port = (uint16_t)fadt->reset_reg.address;
+        uint8_t value = fadt->reset_value;
+        __asm__ volatile("outb %0, %1" :: "a"(value), "Nd"(port));
     }
     
-    // Fallback: Spin
-    for(;;) __asm__("hlt");
+    // Fallback
+    for(;;) __asm__("cli; hlt");
 }
 
 void acpi_shutdown(void) {
-    acpi_fadt_t* fadt = (acpi_fadt_t*)acpi_find_table("FACP");
-    if (!fadt) return;
-
-    // Send the shutdown command to the PM1a Control Block
-    uint16_t slp_typ = 0; // i'm going to use 0 for now. soon i'll add AML Parser lol. 
-    uint16_t pm1a_cnt = fadt->pm1a_control_block;
     
-    if (pm1a_cnt != 0) {
-        outw(pm1a_cnt, (uint16_t)((slp_typ << 10) | (1 << 13)));
-    }
+    printk("[ACPI] Shutdown requested. (Requires AML Parser for real hardware)\n");
     
-    printk("[ACPI] Shutdown failed. Power off manually.\n");
+    // QEMU Fallback
+    __asm__ volatile("outw %0, %1" :: "a"((uint16_t)0x2000), "Nd"((uint16_t)0x604));
+    
+    printk("System halted. Please power off manually.\n");
     for(;;) __asm__("cli; hlt");
 }
