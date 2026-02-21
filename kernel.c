@@ -6,7 +6,7 @@
 #include "lib/printk.h"
 #include "arch/gdt.h"
 #include "arch/idt.h"
-#include "arch/pic.h"
+#include "arch/apic.h"
 #include "drivers/keyboard.h"
 #include "shell/shell.h"
 #include "drivers/timer.h"
@@ -104,17 +104,15 @@ void _start(void) {
     // Initialize CPU structures
     gdt_init();
     idt_init();
-    // Remap PIC (IRQs 0-15 → interrupts 32-47)
-    pic_remap(32, 40);
+
+    // Initialize APIC
+    printk("[KERNEL] Initializing APIC...\n");
+    apic_init();
 
     // Initialize keyboard
     keyboard_init();
 
     timer_init(100);  // 100 Hz (10ms per tick)
-    
-    // Unmask keyboard and timer IRQs
-    pic_clear_mask(0);  // Timer
-    pic_clear_mask(1);  // Keyboard
 
     // Enable interrupts
     __asm__ volatile ("sti");

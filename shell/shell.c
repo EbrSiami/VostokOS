@@ -80,7 +80,7 @@ void shell_init(void) {
     // Cool startup banner
     terminal_set_color(0x00FFFF, 0x000000);  // Cyan
     printk("\n");
-    draw_shell_box("Welcome to VostokOS v0.1.3");
+    draw_shell_box("Welcome to VostokOS v0.1.8");
     terminal_set_color(0xFFFFFF, 0x000000);  // White
     
     printk("\n");
