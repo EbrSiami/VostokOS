@@ -36,6 +36,8 @@ void cmd_benchmark(int argc, char **argv);
 void cmd_spinner(int argc, char **argv);
 void cmd_matrix(int argc, char **argv);
 void cmd_history(int argc, char **argv);
+void cmd_ls(int argc, char **argv);
+void cmd_cat(int argc, char **argv);
 
 int shell_get_history_count(void);
 const char* shell_get_history_item(int index);

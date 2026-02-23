@@ -17,6 +17,8 @@
 #include "drivers/acpi.h"
 #include "drivers/pci.h"
 #include "kernel/sched.h"
+#include "fs/vfs.h"
+#include "fs/tar.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -33,6 +35,12 @@ static volatile struct limine_memmap_request memmap_request = {
 __attribute__((used, section(".requests")))
 static volatile struct limine_hhdm_request hhdm_request = {
     .id = LIMINE_HHDM_REQUEST,
+    .revision = 0
+};
+
+__attribute__((used, section(".requests")))
+static volatile struct limine_module_request module_request = {
+    .id = LIMINE_MODULE_REQUEST,
     .revision = 0
 };
 
@@ -105,6 +113,20 @@ void _start(void) {
     // Initialize Heap
     printk("[KERNEL] Initializing Heap...\n");
     kheap_init();
+
+    // 1. Init VFS
+    vfs_init();
+
+    // 2. Load the Ramdisk
+    if (module_request.response != NULL && module_request.response->module_count > 0) {
+        struct limine_file *module = module_request.response->modules[0];
+        printk("[KERNEL] Found module: %s (Size: %llu bytes)\n", module->path, module->size);
+        
+        // Pass the address to our Tar parser!
+        tar_init(module->address);
+    } else {
+        printk("[KERNEL] Warning: No ramdisk module loaded.\n");
+    }
 
     // Initialize ACPI
     printk("[KERNEL] Initializing ACPI...\n");

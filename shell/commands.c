@@ -6,6 +6,8 @@
 #include "../drivers/timer.h"
 #include "../drivers/acpi.h"
 #include "../limine.h"
+#include "../fs/vfs.h"
+#include "../mm/heap.h"
 
 void draw_shell_box(const char* title) {
     const int total_width = 50; // A fixed width for all boxes
@@ -377,4 +379,66 @@ void cmd_meminfo(int argc, char **argv) {
     }
     
     printk("\n");
+}
+
+void cmd_ls(int argc, char **argv) {
+    (void)argc; (void)argv;
+    
+    vfs_node_t* node = vfs_get_root();
+    if (!node) {
+        printk("File system is empty.\n");
+        return;
+    }
+    
+    printk("  %-20s %-8s %s\n", "Name", "Size", "Type");
+    terminal_put_repeated('\xC4', 40);
+    printk("\n");
+    
+    while (node) {
+        printk("  %-20s %-8llu %s\n", 
+               node->name, 
+               node->size, 
+               node->is_dir ? "<DIR>" : "FILE");
+        node = node->next;
+    }
+    printk("\n");
+}
+
+void cmd_cat(int argc, char **argv) {
+    if (argc < 2) {
+        printk("Usage: cat <filename>\n");
+        return;
+    }
+    
+    vfs_node_t* file = vfs_open(argv[1]);
+    if (!file) {
+        printk("Error: File '%s' not found.\n", argv[1]);
+        return;
+    }
+    
+    if (file->is_dir) {
+        printk("Error: '%s' is a directory.\n", argv[1]);
+        return;
+    }
+    
+    // Allocate a buffer and read the file
+    char* buffer = kmalloc(file->size + 1);
+
+    // Protect against out-of-memory
+    if (!buffer) {
+        printk("Error: Could not allocate memory to read file.\n");
+        return;
+    }
+
+    if (file->size > 65536) {
+        printk("Error: File too large to display (Size: %llu).\n", file->size);
+        return;
+    }
+
+    vfs_read(file, buffer, file->size, 0);
+    buffer[file->size] = '\0'; // Null terminate so we can print it
+    
+    printk("%s\n", buffer);
+    
+    kfree(buffer);
 }

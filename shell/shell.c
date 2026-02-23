@@ -31,6 +31,8 @@ static shell_command_t commands[] = {
     {"spinner",   "Show loading spinner",                cmd_spinner},
     {"matrix",    "Matrix rain effect",                  cmd_matrix},
     {"history",   "Show command history",                cmd_history},
+    {"ls",        "List files in Ramdisk",               cmd_ls},
+    {"cat",       "Print file contents",                 cmd_cat},
     {NULL, NULL, NULL}  // Sentinel
 };
 
