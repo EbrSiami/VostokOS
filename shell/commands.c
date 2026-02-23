@@ -77,7 +77,7 @@ void cmd_info(int argc, char **argv) {
     printk("\n");
 
     printk("  OS Name:       VostokOS\n");
-    printk("  Version:       0.2.0-dev\n");
+    printk("  Version:       0.2.3-dev\n");
     printk("  Architecture:  x86_64\n");
     printk("  Bootloader:    Limine\n");
     printk("  Author:        Ebrahim Siami \n");
