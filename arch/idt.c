@@ -5,9 +5,13 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/timer.h"
 
+uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp);
+
 // IDT with 256 entries
 static struct idt_entry idt[256];
 static struct idt_ptr idt_pointer;
+
+extern uint64_t sched_tick(uint64_t current_rsp);
 
 // External assembly function to load IDT
 extern void idt_flush(uint64_t idt_ptr);
@@ -171,21 +175,29 @@ void isr_handler(uint64_t isr_number, uint64_t error_code) {
 }
 
 // IRQ handler (called from assembly)
-void irq_handler(uint64_t irq_number) {
+uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp) {
     uint8_t actual_irq = irq_number - 32;
+    uint64_t new_rsp = 0;
+
+    if (actual_irq == 7 || actual_irq == 15) {
+            return 0;
+        }
 
     switch (actual_irq) {
         case 0:  // Timer
             timer_handler();
+            // Ask the scheduler if we should switch threads
+            new_rsp = sched_tick(current_rsp);
             break;
         case 1:  // Keyboard
             keyboard_handler();
             break;
         default:
-            // Unhandled IRQ
             break;
     }
 
-    // Send EOI to APIC
+    // Send EOI to APIC before switching context!
     apic_send_eoi();
+    
+    return new_rsp; // If 0, assembly does not switch.
 }

@@ -1,6 +1,10 @@
 #include "printk.h"
 #include "string.h"
 #include "../display/terminal.h"
+#include "spinlock.h"
+
+static spinlock_t printk_lock;
+static bool printk_lock_init = false;
 
 static void print_number(uint64_t value, int base, int is_signed, int uppercase, int width, int left_justify) {
     char buffer[65];
@@ -38,6 +42,13 @@ static void print_number(uint64_t value, int base, int is_signed, int uppercase,
 }
 
 void printk(const char *format, ...) {
+
+    if (!printk_lock_init) {
+        spinlock_init(&printk_lock);
+        printk_lock_init = true;
+    }
+    spinlock_acquire(&printk_lock);
+
     va_list args;
     va_start(args, format);
     
@@ -175,4 +186,12 @@ void printk(const char *format, ...) {
     }
     
     va_end(args);
+
+    spinlock_release(&printk_lock);
+}
+
+void printk_force_unlock(void) {
+    if (printk_lock_init) {
+        printk_lock.locked = 0;
+    }
 }

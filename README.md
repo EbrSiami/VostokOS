@@ -14,3 +14,4 @@ the TODO list for now, i dont have much good memory :(
     5- modular shell and commands. (i did it somehow but not fully)
     6- USB
     7- supporting file systems
+    8- using panic instant of simple hlt

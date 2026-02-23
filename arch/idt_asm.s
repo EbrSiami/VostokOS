@@ -49,6 +49,15 @@ ISR_NOERR 18
 ISR_NOERR 19
 ISR_NOERR 20
 ISR_ERR   21
+ISR_NOERR 22
+ISR_NOERR 23
+ISR_NOERR 24
+ISR_NOERR 25
+ISR_NOERR 26
+ISR_NOERR 27
+ISR_NOERR 28
+ISR_NOERR 29
+ISR_ERR   30
 ISR_NOERR 31
 
 # Define all IRQs (0-15 mapped to 32-47)
@@ -126,7 +135,7 @@ isr_common_stub:
 
 # Common IRQ stub
 irq_common_stub:
-    # Save all registers
+    # 1. Save all registers (15 registers)
     pushq %rax
     pushq %rbx
     pushq %rcx
@@ -144,13 +153,25 @@ irq_common_stub:
     pushq %r15
     
     cld
-    # Call C handler
-    movq 120(%rsp), %rdi    # Get IRQ number from stack
-    movq %rsp, %r12
-    andq $-16, %rsp
+    # 2. Preparing the arguments
+    movq 120(%rsp), %rdi    # IRQ Number
+    movq %rsp, %rsi         # Current RSP
+
+    # 3. Stack alignment using RBP
+    movq %rsp, %rbp         # Copy of current RSP in RBPس
+    andq $-16, %rsp         # Alignment to 16 bytes
+
     call irq_handler
-    movq %r12, %rsp
-    
+
+    # 4. Return the stack to its pre-alignment state
+    movq %rbp, %rsp
+
+    # 5. Check for Context Switch
+    test %rax, %rax
+    jz .no_switch
+    movq %rax, %rsp
+
+.no_switch:
     # Restore registers
     popq %r15
     popq %r14
@@ -169,8 +190,7 @@ irq_common_stub:
     popq %rax
     
     # Clean up error code and IRQ number
-    addq $16, %rsp
-    
+    addq $16, %rsp   
     iretq
 
 # IDT flush function

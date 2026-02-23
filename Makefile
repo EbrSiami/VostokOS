@@ -21,7 +21,7 @@ ASFLAGS :=
 LDFLAGS := -nostdlib -static -T linker.ld
 
 # Source files
-KERNEL_SRC := kernel.c
+KERNEL_SRC := kernel.c kernel/sched.c
 DISPLAY_SRC := display/framebuffer.c display/terminal.c
 FONT_SRC := font/font_data.c
 LIB_SRC := lib/string.c lib/printk.c lib/memory.c lib/bitmap.c lib/panic.c lib/spinlock.c
@@ -85,6 +85,6 @@ run: $(ISO)
 
 # update clean for drivers etc 
 clean:
-	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o *.iso iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o kernel/*.o *.iso iso_root
 
 .PHONY: all run clean

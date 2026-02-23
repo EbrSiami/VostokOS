@@ -16,6 +16,7 @@
 #include "mm/heap.h"
 #include "drivers/acpi.h"
 #include "drivers/pci.h"
+#include "kernel/sched.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -49,6 +50,13 @@ static void hcf(void) {
         __asm__ ("hlt");
     }
 }
+
+// void task_a(void) {
+//     for (;;) {
+//         printk("FUCK ISRAEL\n");
+//         timer_sleep_ms(1000);
+//     }
+// }
 
 void _start(void) {
 
@@ -110,6 +118,10 @@ void _start(void) {
     printk("[KERNEL] Initializing APIC...\n");
     apic_init();
 
+    sched_init();
+
+    // here we can add our threads by thread_create(task_x);
+    
     printk("[KERNEL] Initializing PCI...\n");
     pci_init();
 
