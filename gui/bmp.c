@@ -32,7 +32,7 @@ void bmp_draw(uint8_t* data, int screen_x, int screen_y) {
     }
 
     framebuffer_t *fb = fb_get();
-    uint32_t *screen_buffer = (uint32_t *)fb->address;
+    uint32_t *screen_buffer = (uint32_t *)fb->backbuffer;
     int pitch_words = fb->pitch / 4;
 
     uint8_t* pixel_array = data + file_header->data_offset;

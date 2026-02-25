@@ -158,17 +158,23 @@ void _start(void) {
     printk("\n[KERNEL] Interrupts enabled!\n");
     printk("[KERNEL] System initialized successfully\n");
     
+    fb_enable_double_buffering();
+
     shell_init();
     
-    // Main loop - just wait for interrupts
+    // Main loop - The core of our future Window Manager
     for (;;) {
         __asm__ volatile ("cli");
-        if (keyboard_has_char()) {
-            __asm__ volatile ("sti"); // Re-enable safely
+        bool has_key = keyboard_has_char();
+        __asm__ volatile ("sti");
+
+        if (has_key) {
             char c = keyboard_get_char();
             shell_process_char(c);
-        } else {
-            __asm__ volatile ("sti; hlt"); 
         }
+
+        fb_swap();
+
+        __asm__ volatile ("hlt");
     }
 }

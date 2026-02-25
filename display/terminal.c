@@ -121,7 +121,7 @@ static void hardware_scroll(void) {
         for (size_t x = 0; x < fb->width; x++) {
             size_t src_idx = ((y + FONT_HEIGHT) * (fb->pitch / 4)) + x;
             size_t dst_idx = (y * (fb->pitch / 4)) + x;
-            fb->address[dst_idx] = fb->address[src_idx];
+            fb->backbuffer[dst_idx] = fb->backbuffer[src_idx]; 
         }
     }
     
