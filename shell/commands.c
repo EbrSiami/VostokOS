@@ -8,6 +8,7 @@
 #include "../limine.h"
 #include "../fs/vfs.h"
 #include "../mm/heap.h"
+#include "../gui/bmp.h"
 
 void draw_shell_box(const char* title) {
     const int total_width = 50; // A fixed width for all boxes
@@ -441,4 +442,25 @@ void cmd_cat(int argc, char **argv) {
     printk("%s\n", buffer);
     
     kfree(buffer);
+}
+
+void cmd_img(int argc, char **argv) {
+    if (argc < 2) {
+        printk("Usage: img <filename.bmp>\n");
+        return;
+    }
+
+    vfs_node_t* file = vfs_open(argv[1]);
+    if (!file) {
+        printk("Error: File '%s' not found.\n", argv[1]);
+        return;
+    }
+
+    if (file->is_dir) {
+        printk("Error: '%s' is a directory.\n", argv[1]);
+        return;
+    }
+
+    // Draw the image at X: 400, Y: 100 (somewhere in the middle of the screen)
+    bmp_draw(file->data, 400, 100);
 }

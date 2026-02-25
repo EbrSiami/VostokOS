@@ -33,6 +33,7 @@ static shell_command_t commands[] = {
     {"history",   "Show command history",                cmd_history},
     {"ls",        "List files in Ramdisk",               cmd_ls},
     {"cat",       "Print file contents",                 cmd_cat},
+    {"bitmap",    "Draw a bitmap image on screen",       cmd_img},
     {NULL, NULL, NULL}  // Sentinel
 };
 

@@ -5,8 +5,6 @@ CC := x86_64-elf-gcc
 LD := x86_64-elf-ld
 AS := x86_64-elf-as
 
-# note i'll turn off the AVX, SSE for now. 
-
 CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
           -march=x86-64 \
 		  -fno-tree-vectorize \
@@ -31,6 +29,7 @@ DRIVERS_SRC := drivers/keyboard.c drivers/timer.c drivers/acpi.c drivers/pci.c
 SHELL_SRC := shell/shell.c shell/commands.c
 MM_SRC := mm/pmm.c mm/vmm.c mm/heap.c
 FS_SRC := fs/vfs.c fs/tar.c
+GUI_SRC := gui/bmp.c
 
 # Object files
 KERNEL_OBJ := $(KERNEL_SRC:.c=.o)
@@ -43,8 +42,9 @@ DRIVERS_OBJ := $(DRIVERS_SRC:.c=.o)
 SHELL_OBJ := $(SHELL_SRC:.c=.o)
 MM_OBJ := $(MM_SRC:.c=.o)
 FS_OBJ := $(FS_SRC:.c=.o)
+GUI_OBJ := $(GUI_SRC:.c=.o)
 
-ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ) $(ARCH_OBJ) $(ARCH_ASM_OBJ) $(DRIVERS_OBJ) $(SHELL_OBJ) $(MM_OBJ) $(FS_OBJ)
+ALL_OBJ := $(KERNEL_OBJ) $(DISPLAY_OBJ) $(FONT_OBJ) $(LIB_OBJ) $(ARCH_OBJ) $(ARCH_ASM_OBJ) $(DRIVERS_OBJ) $(SHELL_OBJ) $(MM_OBJ) $(FS_OBJ) $(GUI_OBJ)
 
 all: $(ISO)
 
@@ -66,6 +66,9 @@ mm/%.o: mm/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 fs/%.o: fs/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+gui/%.o: gui/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Link kernel
@@ -90,8 +93,7 @@ $(ISO): $(KERNEL) limine.conf
 run: $(ISO)
 	qemu-system-x86_64 -cdrom $(ISO) -m 512M
 
-# update clean for drivers etc 
 clean:
-	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o kernel/*.o fs/*.o *.iso *.tar iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o kernel/*.o fs/*.o gui/*.o *.iso *.tar iso_root
 
 .PHONY: all run clean
