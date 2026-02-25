@@ -164,17 +164,16 @@ void _start(void) {
     
     // Main loop - The core of our future Window Manager
     for (;;) {
+        fb_swap();
+        
         __asm__ volatile ("cli");
-        bool has_key = keyboard_has_char();
-        __asm__ volatile ("sti");
 
-        if (has_key) {
+        if (keyboard_has_char()) {
+            __asm__ volatile ("sti"); 
             char c = keyboard_get_char();
             shell_process_char(c);
+        } else {
+            __asm__ volatile ("sti; hlt"); 
         }
-
-        fb_swap();
-
-        __asm__ volatile ("hlt");
     }
 }
