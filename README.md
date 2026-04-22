@@ -1,4 +1,6 @@
-# I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
+# After the war started, my whole world fell apart. I’m still in the hospital today, April 23, 2026, and I still can’t feel one of my legs. If you’re seeing this, I’d appreciate your prayers. If I’m ever able to return to a normal life—something I can only dream of right now—I promise to finish this project…
+
+## I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
 
 This OS will be my first attempt at developing everything from scratch.
 
