@@ -98,35 +98,28 @@ void keyboard_set_leds(void) {
     for (volatile int i = 0; i < 10000; i++);
 }
 
-void keyboard_handler(void) {
-    // Check if data is actually available
-    uint8_t status = inb(KEYBOARD_STATUS_PORT);
-    if ((status & 0x01) == 0) {
-        return;  // No data available
-    }
-    
-    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
-    
+// Process a single scancode (extracted from handler for loop draining)
+static void process_scancode(uint8_t scancode) {
     // Check if this is a key release (break code)
     bool key_released = (scancode & 0x80) != 0;
     scancode &= 0x7F;  // Remove the release bit
-    
+
     // Handle modifier keys
     if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT) {
         kb_state.shift_pressed = !key_released;
         return;
     }
-    
+
     if (scancode == KEY_CTRL) {
         kb_state.ctrl_pressed = !key_released;
         return;
     }
-    
+
     if (scancode == KEY_ALT) {
         kb_state.alt_pressed = !key_released;
         return;
     }
-    
+
     // Handle toggle keys (only on press, not release)
     if (!key_released) {
         if (scancode == KEY_CAPSLOCK) {
@@ -134,35 +127,35 @@ void keyboard_handler(void) {
             keyboard_set_leds();  // Update LEDs
             return;
         }
-        
+
         if (scancode == KEY_NUMLOCK) {
             kb_state.num_lock = !kb_state.num_lock;
             keyboard_set_leds();  // Update LEDs
             return;
         }
-        
+
         if (scancode == KEY_SCROLLLOCK) {
             kb_state.scroll_lock = !kb_state.scroll_lock;
             keyboard_set_leds();  // Update LEDs
             return;
         }
     }
-    
+
     // Only process key presses (not releases) for printable characters
     if (key_released) {
         return;
     }
-    
+
     // Convert scancode to ASCII
     char ascii = 0;
-    
+
     if (scancode < sizeof(scancode_to_ascii)) {
         if (kb_state.shift_pressed) {
             ascii = scancode_to_ascii_shift[scancode];
         } else {
             ascii = scancode_to_ascii[scancode];
         }
-        
+
         // Handle caps lock for letters
         if (kb_state.caps_lock && ascii >= 'a' && ascii <= 'z') {
             ascii -= 32;  // Convert to uppercase
@@ -170,13 +163,43 @@ void keyboard_handler(void) {
             ascii += 32;  // Convert to lowercase (shift inverts caps lock)
         }
     }
-    
+
     if (ascii != 0) {
         int next_head = (kb_head + 1) % KB_BUFFER_SIZE;
         if (next_head != kb_tail) { // If buffer is not full
             kb_buffer[kb_head] = ascii;
             kb_head = next_head;
         }
+    }
+}
+
+void keyboard_handler(void) {
+    // Drain ALL bytes from the PS/2 output buffer.
+    // On real hardware, multiple bytes can queue up (noise, multi-byte
+    // scancodes, controller quirks). Reading only one byte per IRQ causes
+    // the remaining bytes to each fire their own interrupt, leading to
+    // ghost key repeats (especially on laptops like Aspire 5920).
+    //
+    while (1) {
+        uint8_t status = inb(KEYBOARD_STATUS_PORT);
+
+        // No more data in the output buffer
+        if ((status & 0x01) == 0) {
+            break;
+        }
+
+        // Check for controller errors (timeout / parity).
+        // On real hardware, electrical noise can corrupt bytes; the
+        // controller sets these error bits.  Discard the byte instead
+        // of treating noise as a valid scancode.
+        if (status & 0x60) {  // bit 5 = timeout, bit 6 = parity error
+            // Read and discard the bad byte so the buffer clears
+            (void)inb(KEYBOARD_DATA_PORT);
+            continue;
+        }
+
+        uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+        process_scancode(scancode);
     }
 }
 
