@@ -1,4 +1,4 @@
-# I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
+## I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
 
 This OS will be my first attempt at developing everything from scratch.
 
