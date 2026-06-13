@@ -251,16 +251,17 @@ void* krealloc(void* ptr, size_t new_size) {
         kfree(ptr);
         return NULL;
     }
-    
-    // We need to check the size without holding the lock yet, 
-    // but accessing the header is safe as long as we own the pointer.
+
+    spinlock_acquire(&heap_lock);
     block_header_t* block = (block_header_t*)((uint64_t)ptr - HEADER_SIZE);
-    if (block->size >= new_size) return ptr; 
+    size_t old_size = block->size;
+    spinlock_release(&heap_lock);
+    
+    if (old_size >= new_size) return ptr; 
     
     void* new_ptr = kmalloc(new_size);
     if (new_ptr) {
-        // Safe copy size
-        memcpy(new_ptr, ptr, min(block->size, new_size));
+        memcpy(new_ptr, ptr, min(old_size, new_size));
         kfree(ptr);
     }
     return new_ptr;

@@ -168,6 +168,7 @@ void apic_init(void) {
     // 8. Configure IOAPIC
     ioapic_set_entry(0, 32); // Timer
     ioapic_set_entry(1, 33); // Keyboard
+    ioapic_set_entry(12, 44); // Mouse
 }
 
 void apic_send_eoi(void) {

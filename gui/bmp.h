@@ -34,4 +34,7 @@ typedef struct {
 // x, y: coordinates on the screen
 void bmp_draw(uint8_t* data, int screen_x, int screen_y);
 
+// Decode a BMP into a memory buffer 
+uint32_t* bmp_load(uint8_t* data, int* out_width, int* out_height);
+
 #endif

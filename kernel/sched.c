@@ -2,7 +2,7 @@
 #include "../mm/heap.h"
 #include "../lib/string.h"
 #include "../lib/printk.h"
-#include "lib/panic.h"
+#include "../lib/panic.h"
 
 static uint64_t tick_count = 0;
 
@@ -56,6 +56,9 @@ void thread_create(void (*entry_point)(void)) {
     // Top of the stack
     uint64_t* stack_top = (uint64_t*)((uint64_t)new_thread->stack_base + 8192);
     
+    // Align to 16 bytes
+    stack_top = (uint64_t*)((uint64_t)stack_top & ~0xF);
+
     // Place the return address (thread_exit) at the top of the stack
     uint64_t* stack_ptr = stack_top;
     stack_ptr--; 

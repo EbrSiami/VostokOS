@@ -136,7 +136,7 @@ void* pmm_alloc_pages(size_t count) {
             for (size_t j = 1; j < count; j++) {
                 if (i + j >= highest_page || bitmap_test(bitmap, i + j)) {
                     found = 0;
-                    i += j; // Skip ahead
+                    i += j - 1;
                     break;
                 }
             }

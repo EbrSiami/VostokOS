@@ -3,6 +3,7 @@
 #include "../lib/string.h"
 #include "../lib/memory.h"
 #include "../display/terminal.h"
+#include "../display/framebuffer.h"
 #include "../drivers/timer.h"
 #include "../drivers/acpi.h"
 #include "../limine.h"
@@ -138,6 +139,7 @@ void cmd_sleep(int argc, char **argv) {
     for (int i = 0; i < seconds; i++) {
         timer_sleep(1);
         printk(".");
+        fb_swap();
     }
     
     printk(" Done!\n");
@@ -182,6 +184,7 @@ void cmd_spinner(int argc, char **argv) {
     
     for (int i = 0; i < 40; i++) {
         printk(" %c", spinner[i % 4]);
+        fb_swap();
         timer_sleep_ms(100);
         printk("\b\b");  // Go back 2 chars
     }
@@ -211,6 +214,8 @@ void cmd_matrix(int argc, char **argv) {
         if ((timer_get_ticks() % 40) == 0) {
             terminal_putchar('\n');
         }
+
+        fb_swap();
     }
     
     terminal_set_color(0xFFFFFF, 0x000000);  // Back to white
@@ -248,6 +253,7 @@ void cmd_shutdown(int argc, char **argv) {
     for (int i = 0; i < 3; i++) {
         timer_sleep(1);
         printk(".");
+        fb_swap();
     }
     printk("\n\nPowering off now...\n\n");
     timer_sleep(1);
@@ -275,6 +281,7 @@ void cmd_reboot(int argc, char **argv) {
     for (int i = 0; i < 3; i++) {
         timer_sleep(1);
         printk(".");
+        fb_swap();
     }
     printk("\n\nRebooting now...\n\n");
     timer_sleep(1);

@@ -4,6 +4,7 @@
 #include "../lib/string.h"
 #include "../drivers/keyboard.h"
 #include "../drivers/timer.h"
+#include "../drivers/mouse.h"
 
 uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp);
 
@@ -191,6 +192,9 @@ uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp) {
             break;
         case 1:  // Keyboard
             keyboard_handler();
+            break;
+        case 12:
+            mouse_handler();
             break;
         default:
             break;

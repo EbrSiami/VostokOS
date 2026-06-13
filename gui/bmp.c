@@ -1,6 +1,7 @@
 #include "bmp.h"
 #include "../display/framebuffer.h"
 #include "../lib/printk.h"
+#include "../mm/heap.h"
 
 void bmp_draw(uint8_t* data, int screen_x, int screen_y) {
     bmp_file_header_t* file_header = (bmp_file_header_t*)data;
@@ -59,4 +60,57 @@ void bmp_draw(uint8_t* data, int screen_x, int screen_y) {
             }
         }
     }
+}
+
+uint32_t* bmp_load(uint8_t* data, int* out_width, int* out_height) {
+    bmp_file_header_t* file_header = (bmp_file_header_t*)data;
+    
+    if (file_header->signature != 0x4D42) return NULL;
+
+    bmp_info_header_t* info = (bmp_info_header_t*)(data + sizeof(bmp_file_header_t));
+    if (info->compression != 0 || (info->bpp != 24 && info->bpp != 32)) return NULL;
+
+    int width = info->width;
+    int height = info->height;
+    int is_bottom_up = 1;
+    if (height < 0) {
+        is_bottom_up = 0;
+        height = -height;
+    }
+
+    *out_width = width;
+    *out_height = height;
+
+    // Allocate memory for the decoded image
+    uint32_t* buffer = (uint32_t*)kmalloc(width * height * 4);
+    if (!buffer) return NULL;
+
+    uint8_t* pixel_array = data + file_header->data_offset;
+    int bytes_per_pixel = info->bpp / 8;
+    int row_stride = (width * bytes_per_pixel + 3) & ~3;
+
+    for (int y = 0; y < height; y++) {
+        int file_y = is_bottom_up ? (height - 1 - y) : y;
+        uint8_t* row_ptr = pixel_array + (file_y * row_stride);
+
+        for (int x = 0; x < width; x++) {
+            int pixel_offset = x * bytes_per_pixel;
+            uint8_t b = row_ptr[pixel_offset];
+            uint8_t g = row_ptr[pixel_offset + 1];
+            uint8_t r = row_ptr[pixel_offset + 2];
+            uint8_t a = 0xFF; // Default to fully visible
+
+            if (info->bpp == 32) {
+                a = row_ptr[pixel_offset + 3];
+            } else {
+                if (r == 255 && g == 255 && b == 255) {
+                    a = 0x00;
+                }
+            }
+
+            uint32_t color = (a << 24) | (r << 16) | (g << 8) | b;
+            buffer[(y * width) + x] = color;
+        }
+    }
+    return buffer;
 }
