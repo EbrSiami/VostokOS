@@ -64,33 +64,63 @@ static uint64_t* get_next_level(uint64_t* table_entry, uint64_t flags) {
 }
 
 void vmm_map(uint64_t* pml4, uint64_t vaddr, uint64_t paddr, uint64_t flags) {
+    if ((vaddr & 0xFFF) || (paddr & 0xFFF)) {
+        panic("VMM: Virtual or Physical address is not page-aligned!");
+    }
+
     uint64_t pml4_idx = (vaddr >> 39) & 0x1FF;
     uint64_t pdpt_idx = (vaddr >> 30) & 0x1FF;
     uint64_t pd_idx   = (vaddr >> 21) & 0x1FF;
     uint64_t pt_idx   = (vaddr >> 12) & 0x1FF;
 
-    // Determine flags for intermediate tables.
-    // They must be Present and RW. 
     uint64_t intermediate_flags = PTE_PRESENT | PTE_RW;
     if (flags & PTE_USER) {
         intermediate_flags |= PTE_USER;
     }
 
-    // Walk the tables
+    if ((pml4[pml4_idx] & PTE_PRESENT) && (pml4[pml4_idx] & (1ULL << 7))) {
+        panic("VMM: Detected 1GB huge page at PML4 level! Not supported.");
+    }
     uint64_t* pdpt = get_next_level(&pml4[pml4_idx], intermediate_flags);
-    uint64_t* pd   = get_next_level(&pdpt[pdpt_idx], intermediate_flags);
-    uint64_t* pt   = get_next_level(&pd[pd_idx], intermediate_flags);
 
-    // Check for double mapping
-    if (pt[pt_idx] & PTE_PRESENT) {
-        printk("[VMM] Error: VA 0x%llx already mapped to PA 0x%llx\n", 
-               vaddr, pt[pt_idx] & 0x000FFFFFFFFFF000);
-        panic("VMM: Double mapping detected");
+    if ((pdpt[pdpt_idx] & PTE_PRESENT) && (pdpt[pdpt_idx] & (1ULL << 7))) {
+        panic("VMM: Detected 1GB huge page at PDPT level! Not supported.");
+    }
+    uint64_t* pd = get_next_level(&pdpt[pdpt_idx], intermediate_flags);
+
+    if ((pd[pd_idx] & PTE_PRESENT) && (pd[pd_idx] & (1ULL << 7))) {
+        uint64_t existing_paddr_2mb = pd[pd_idx] & 0x000FFFFFFFE00000;
+        uint64_t target_paddr_2mb = paddr & 0x000FFFFFFFE00000;
+
+        if (existing_paddr_2mb == target_paddr_2mb) {
+
+            printk("[VMM] Warning: Updating flags on existing 2MB page covering VA 0x%llx\n", vaddr);
+
+            pd[pd_idx] |= (flags & (PTE_PCD | PTE_PWT | PTE_RW | PTE_USER));
+            tlb_flush(vaddr);
+            return;
+        } else {
+            panic("VMM: Hard conflict with an existing 2MB Huge Page mapping!");
+        }
     }
 
-    // Set the leaf entry
+    uint64_t* pt = get_next_level(&pd[pd_idx], intermediate_flags);
+
+    if (pt[pt_idx] & PTE_PRESENT) {
+        uint64_t existing_paddr = pt[pt_idx] & 0x000FFFFFFFFFF000;
+
+        if (existing_paddr == paddr) {
+            pt[pt_idx] = paddr | flags;
+            tlb_flush(vaddr);
+            return; 
+        } else {
+            printk("[VMM] Critical Conflict: VA 0x%llx is already mapped to PA 0x%llx (New request: PA 0x%llx)\n", 
+                   vaddr, existing_paddr, paddr);
+            panic("VMM: Double-Mapping collision detected!");
+        }
+    }
+
     pt[pt_idx] = paddr | flags;
-    
     tlb_flush(vaddr);
 }
 

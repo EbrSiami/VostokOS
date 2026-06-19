@@ -31,8 +31,13 @@
 #define IOAPICARB       0x02
 #define IOREDTBL        0x10    
 
+// Core APIC API
 void apic_init(void);
 void apic_send_eoi(void);
 uint32_t apic_get_id(void);
 
-#endif
+// IOAPIC Routing API (Returns false if out of bounds)
+bool ioapic_set_gsi(uint32_t gsi, uint8_t vector, uint16_t flags, bool masked);
+bool ioapic_set_isa_irq(uint8_t isa_irq, uint8_t vector, bool masked);
+
+#endif // APIC_H

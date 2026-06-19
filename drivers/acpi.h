@@ -115,7 +115,7 @@ typedef struct {
 #define MADT_LAPIC   0
 #define MADT_IOAPIC  1
 #define MADT_ISO     2
-#define MADT_NMI     4
+#define MADT_LAPIC_NMI 4
 
 // Type 0: Processor Local APIC
 typedef struct {
@@ -142,6 +142,13 @@ typedef struct {
     uint32_t gsi;   // Global System Interrupt (Input to IOAPIC)
     uint16_t flags; // Polarity and Trigger mode
 } __attribute__((packed)) acpi_madt_iso_t;
+
+typedef struct {
+    acpi_madt_entry_t header;
+    uint8_t processor_id; // ACPI Processor ID (0xFF means all processors)
+    uint16_t flags;        // MPS INTI Flags (Polarity/Trigger)
+    uint8_t lint;         // Local APIC LINT pin (0 or 1)
+} __attribute__((packed)) acpi_madt_lapic_nmi_t;
 
 // MCFG (PCI Express Memory Mapped Configuration)
 typedef struct {
