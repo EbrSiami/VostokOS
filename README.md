@@ -1,5 +1,10 @@
 ## Vostok Operating System.
 
+![Language](https://img.shields.io/badge/language-C%20%2F%20Assembly-blue)
+![Architecture](https://img.shields.io/badge/arch-x86__64-orange)
+![Bootloader](https://img.shields.io/badge/bootloader-Limine-brightgreen)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+
 ## I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
 
 This OS is my first attempt at developing a 64-bit operating system completely from scratch. 
