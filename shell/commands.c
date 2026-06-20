@@ -85,7 +85,7 @@ void cmd_info(int argc, char **argv) {
     printk("  Author:        Ebrahim Siami \n");
     
     terminal_set_color(0x00FF00, 0x000000);
-    printk("\n  FREE PALESTINE! \n");
+    printk("\n  FUCK TRUMP! \n");
     terminal_set_color(0xFFFFFF, 0x000000);
     
     printk("\n");
@@ -196,29 +196,33 @@ void cmd_matrix(int argc, char **argv) {
     (void)argc;
     (void)argv;
     
-    terminal_set_color(0x00FF00, 0x000000);  // Green text
+    terminal_set_color(0x00FF00, 0x000000);  // green text
     printk("Matrix mode... (5 seconds)\n\n");
     
-    /* ASCII only - avoid multi-byte UTF-8 / encoding issues */
-    const char chars[] = "01";
-    uint64_t end_time = timer_get_uptime_ms() + 5000;
+    // add empty spaces
+    const char chars[] = "0101   01   "; 
+    int chars_len = sizeof(chars) - 1;
     
+    uint64_t end_time = timer_get_uptime_ms() + 5000;
+    uint32_t pseudo_rand = (uint32_t)timer_get_ticks();
+
     while (timer_get_uptime_ms() < end_time) {
-        /* Pick char by tick (pseudo-random) */
-        char c = chars[timer_get_ticks() % (sizeof(chars) - 1)];
+        // (Linear Congruential Generator)
+        pseudo_rand = pseudo_rand * 1664525 + 1013904223;
+        
+        char c = chars[pseudo_rand % chars_len];
         terminal_putchar(c);
         
-        timer_sleep_ms(20);
-        
-        // Random newlines
-        if ((timer_get_ticks() % 40) == 0) {
+        timer_sleep_ms(25);
+
+        if ((pseudo_rand % 35) == 0) {
             terminal_putchar('\n');
         }
 
         fb_swap();
     }
     
-    terminal_set_color(0xFFFFFF, 0x000000);  // Back to white
+    terminal_set_color(0xFFFFFF, 0x000000);  // back to white
     printk("\n\n[Matrix ended]\n");
 }
 
