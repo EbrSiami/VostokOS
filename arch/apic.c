@@ -165,7 +165,6 @@ void apic_init(void) {
     uint64_t lapic_phys = msr_base & ~(uint64_t)0xFFF;
     lapic_base = p2v(lapic_phys);
     
-    // Fixed: Uses vmm_map with correct args and PTE flags
     vmm_map(vmm_get_kernel_pml4(), (uint64_t)lapic_base, lapic_phys, PTE_PRESENT | PTE_RW | PTE_PCD | PTE_PWT);
 
     uint32_t ver = lapic_read(LAPIC_VER);
@@ -193,7 +192,7 @@ void apic_init(void) {
         if (entry->type == MADT_LAPIC) { 
             acpi_madt_lapic_t* lapic = (acpi_madt_lapic_t*)entry;
             if (lapic->apic_id == bsp_apic_id) {
-                bsp_acpi_uid = lapic->processor_id; // Fixed naming
+                bsp_acpi_uid = lapic->processor_id;
                 bsp_uid_found = true;
             }
         }
