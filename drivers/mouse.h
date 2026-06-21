@@ -16,4 +16,6 @@ void mouse_init(void);
 void mouse_handler(void);
 mouse_state_t* mouse_get_state(void);
 
+uint64_t mouse_irq_handler(uint64_t current_rsp);
+
 #endif

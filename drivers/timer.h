@@ -32,4 +32,6 @@ void timer_wait_ticks(uint64_t ticks);
 // NEW: Get the timer frequency
 uint32_t timer_get_frequency(void);
 
+uint64_t timer_irq_handler(uint64_t current_rsp);
+
 #endif

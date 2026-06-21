@@ -26,7 +26,7 @@ irq\num:
     jmp irq_common_stub
 .endm
 
-# Define all ISRs
+# Define all ISRs (0-31)
 ISR_NOERR 0
 ISR_NOERR 1
 ISR_NOERR 2
@@ -49,6 +49,7 @@ ISR_NOERR 18
 ISR_NOERR 19
 ISR_NOERR 20
 ISR_ERR   21
+# Generate placeholders for reserved exceptions 22-30
 ISR_NOERR 22
 ISR_NOERR 23
 ISR_NOERR 24
@@ -80,114 +81,110 @@ IRQ 15, 47
 
 # Common ISR stub
 isr_common_stub:
-    # Save all registers
-    pushq %rax
-    pushq %rbx
-    pushq %rcx
-    pushq %rdx
-    pushq %rsi
-    pushq %rdi
-    pushq %rbp
-    pushq %r8
-    pushq %r9
-    pushq %r10
-    pushq %r11
-    pushq %r12
-    pushq %r13
-    pushq %r14
+    # Save all registers (15 registers = 120 bytes)
     pushq %r15
+    pushq %r14
+    pushq %r13
+    pushq %r12
+    pushq %r11
+    pushq %r10
+    pushq %r9
+    pushq %r8
+    pushq %rbp
+    pushq %rdi
+    pushq %rsi
+    pushq %rdx
+    pushq %rcx
+    pushq %rbx
+    pushq %rax
     
-    # Call C handler
-    # Arguments: rdi = ISR number, rsi = error code
     cld
-    movq 120(%rsp), %rdi    # Get ISR number from stack
-    movq 128(%rsp), %rsi    # Get error code from stack
+    # Pass pointer to the register state structure as the first argument
+    movq %rsp, %rdi          
 
-    # Aligning the stack before calling a C function
-    movq %rsp, %rbp         # current RSP value
-    andq $-16, %rsp         # Align to 16 bytes (down)
+    # Align the stack to 16 bytes before calling C
+    movq %rsp, %rbp         
+    andq $-16, %rsp         
     
     call isr_handler
 
     movq %rbp, %rsp         # Restore the original RSP
     
     # Restore registers
-    popq %r15
-    popq %r14
-    popq %r13
-    popq %r12
-    popq %r11
-    popq %r10
-    popq %r9
-    popq %r8
-    popq %rbp
-    popq %rdi
-    popq %rsi
-    popq %rdx
-    popq %rcx
-    popq %rbx
     popq %rax
+    popq %rbx
+    popq %rcx
+    popq %rdx
+    popq %rsi
+    popq %rdi
+    popq %rbp
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+    popq %r14
+    popq %r15
     
     # Clean up error code and ISR number
     addq $16, %rsp
-    
     iretq
 
 # Common IRQ stub
 irq_common_stub:
-    # 1. Save all registers (15 registers)
-    pushq %rax
-    pushq %rbx
-    pushq %rcx
-    pushq %rdx
-    pushq %rsi
-    pushq %rdi
-    pushq %rbp
-    pushq %r8
-    pushq %r9
-    pushq %r10
-    pushq %r11
-    pushq %r12
-    pushq %r13
-    pushq %r14
+    # Save all registers (15 registers)
     pushq %r15
+    pushq %r14
+    pushq %r13
+    pushq %r12
+    pushq %r11
+    pushq %r10
+    pushq %r9
+    pushq %r8
+    pushq %rbp
+    pushq %rdi
+    pushq %rsi
+    pushq %rdx
+    pushq %rcx
+    pushq %rbx
+    pushq %rax
     
     cld
-    # 2. Preparing the arguments
-    movq 120(%rsp), %rdi    # IRQ Number
-    movq %rsp, %rsi         # Current RSP
+    # Pass pointer to the register state structure as the first argument
+    movq %rsp, %rdi         
 
-    # 3. Stack alignment using RBP
-    movq %rsp, %rbp         # Copy of current RSP in RBPس
-    andq $-16, %rsp         # Alignment to 16 bytes
+    # Stack alignment using RBP
+    movq %rsp, %rbp         
+    andq $-16, %rsp         
 
     call irq_handler
 
-    # 4. Return the stack to its pre-alignment state
+    # Return the stack to its pre-alignment state
     movq %rbp, %rsp
 
-    # 5. Check for Context Switch
-    test %rax, %rax
+    # Check for Context Switch (returned new RSP in RAX)
+    testq %rax, %rax
     jz .no_switch
-    movq %rax, %rsp
+    movq %rax, %rsp         # Context Switch occurs here
 
 .no_switch:
     # Restore registers
-    popq %r15
-    popq %r14
-    popq %r13
-    popq %r12
-    popq %r11
-    popq %r10
-    popq %r9
-    popq %r8
-    popq %rbp
-    popq %rdi
-    popq %rsi
-    popq %rdx
-    popq %rcx
-    popq %rbx
     popq %rax
+    popq %rbx
+    popq %rcx
+    popq %rdx
+    popq %rsi
+    popq %rdi
+    popq %rbp
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+    popq %r14
+    popq %r15
     
     # Clean up error code and IRQ number
     addq $16, %rsp   
@@ -199,4 +196,3 @@ irq_common_stub:
 idt_flush:
     lidt (%rdi)
     ret
-    

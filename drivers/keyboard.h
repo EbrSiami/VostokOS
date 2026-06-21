@@ -60,6 +60,8 @@ void keyboard_handler(void);
 // Get keyboard state
 keyboard_state_t* keyboard_get_state(void);
 
+uint64_t keyboard_irq_handler(uint64_t current_rsp);
+
 bool keyboard_has_char(void);
 char keyboard_get_char(void);
 

@@ -1,207 +1,133 @@
 #include "idt.h"
 #include "apic.h"
+#include "../lib/panic.h"
 #include "../lib/printk.h"
 #include "../lib/string.h"
-#include "../drivers/keyboard.h"
-#include "../drivers/timer.h"
-#include "../drivers/mouse.h"
 
-uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp);
+// Array of registered IRQ handlers (0-15)
+static irq_handler_t irq_handlers[16] = {0};
 
-// IDT with 256 entries
 static struct idt_entry idt[256];
 static struct idt_ptr idt_pointer;
 
-extern uint64_t sched_tick(uint64_t current_rsp);
+// Type-safe idt_flush declaration
+extern void idt_flush(struct idt_ptr *ptr);
 
-// External assembly function to load IDT
-extern void idt_flush(uint64_t idt_ptr);
+// External declarations for ISRs 0-31
+#define DECLARE_ISR(num) extern void isr##num(void);
+DECLARE_ISR(0)  DECLARE_ISR(1)  DECLARE_ISR(2)  DECLARE_ISR(3)
+DECLARE_ISR(4)  DECLARE_ISR(5)  DECLARE_ISR(6)  DECLARE_ISR(7)
+DECLARE_ISR(8)  DECLARE_ISR(9)  DECLARE_ISR(10) DECLARE_ISR(11)
+DECLARE_ISR(12) DECLARE_ISR(13) DECLARE_ISR(14) DECLARE_ISR(15)
+DECLARE_ISR(16) DECLARE_ISR(17) DECLARE_ISR(18) DECLARE_ISR(19)
+DECLARE_ISR(20) DECLARE_ISR(21) DECLARE_ISR(22) DECLARE_ISR(23)
+DECLARE_ISR(24) DECLARE_ISR(25) DECLARE_ISR(26) DECLARE_ISR(27)
+DECLARE_ISR(28) DECLARE_ISR(29) DECLARE_ISR(30) DECLARE_ISR(31)
 
-// IRQ handlers (32-47)
-extern void irq0(void);
-extern void irq1(void);
-extern void irq2(void);
-extern void irq3(void);
-extern void irq4(void);
-extern void irq5(void);
-extern void irq6(void);
-extern void irq7(void);
-extern void irq8(void);
-extern void irq9(void);
-extern void irq10(void);
-extern void irq11(void);
-extern void irq12(void);
-extern void irq13(void);
-extern void irq14(void);
-extern void irq15(void);
+// External declarations for IRQs 0-15
+#define DECLARE_IRQ(num) extern void irq##num(void);
+DECLARE_IRQ(0)  DECLARE_IRQ(1)  DECLARE_IRQ(2)  DECLARE_IRQ(3)
+DECLARE_IRQ(4)  DECLARE_IRQ(5)  DECLARE_IRQ(6)  DECLARE_IRQ(7)
+DECLARE_IRQ(8)  DECLARE_IRQ(9)  DECLARE_IRQ(10) DECLARE_IRQ(11)
+DECLARE_IRQ(12) DECLARE_IRQ(13) DECLARE_IRQ(14) DECLARE_IRQ(15)
 
-// Exception handler declarations (implemented in idt_asm.s)
-extern void isr0(void);   // Divide by zero
-extern void isr1(void);   // Debug
-extern void isr2(void);   // NMI
-extern void isr3(void);   // Breakpoint
-extern void isr4(void);   // Overflow
-extern void isr5(void);   // Bound range exceeded
-extern void isr6(void);   // Invalid opcode
-extern void isr7(void);   // Device not available
-extern void isr8(void);   // Double fault
-extern void isr9(void);   // Coprocessor segment overrun
-extern void isr10(void);  // Invalid TSS
-extern void isr11(void);  // Segment not present
-extern void isr12(void);  // Stack-segment fault
-extern void isr13(void);  // General protection fault
-extern void isr14(void);  // Page fault
-extern void isr15(void);  // Reserved
-extern void isr16(void);  // x87 FPU error
-extern void isr17(void);  // Alignment check
-extern void isr18(void);  // Machine check
-extern void isr19(void);  // SIMD floating-point exception
-extern void isr20(void);  // Virtualization exception
-extern void isr21(void);  // Control protection exception
-// 22-31 reserved
-extern void isr31(void);
-
-// Set an IDT entry
 static void idt_set_gate(uint8_t num, uint64_t handler, uint16_t selector, uint8_t flags) {
     idt[num].offset_low = handler & 0xFFFF;
     idt[num].offset_mid = (handler >> 16) & 0xFFFF;
     idt[num].offset_high = (handler >> 32) & 0xFFFFFFFF;
-    
     idt[num].selector = selector;
-    idt[num].ist = 0;  // No IST for now
+    idt[num].ist = 0;
     idt[num].type_attr = flags;
     idt[num].zero = 0;
 }
 
+// Function allowed for drivers to register themselves dynamically
+void irq_register_handler(uint8_t irq_line, irq_handler_t handler) {
+    if (irq_line < 16) {
+        irq_handlers[irq_line] = handler;
+    }
+}
+
 void idt_init(void) {
     idt_pointer.limit = (sizeof(struct idt_entry) * 256) - 1;
-    idt_pointer.base = (uint64_t)&idt;
+    idt_pointer.base = (uint64_t)(uintptr_t)&idt;
     
-    // Clear IDT
     memset(&idt, 0, sizeof(struct idt_entry) * 256);
     
-    // Set up exception handlers (ISRs 0-31)
-    // Flags: 0x8E = Present, Ring 0, 64-bit Interrupt Gate
-    idt_set_gate(0, (uint64_t)isr0, 0x08, 0x8E);
-    idt_set_gate(1, (uint64_t)isr1, 0x08, 0x8E);
-    idt_set_gate(2, (uint64_t)isr2, 0x08, 0x8E);
-    idt_set_gate(3, (uint64_t)isr3, 0x08, 0x8E);
-    idt_set_gate(4, (uint64_t)isr4, 0x08, 0x8E);
-    idt_set_gate(5, (uint64_t)isr5, 0x08, 0x8E);
-    idt_set_gate(6, (uint64_t)isr6, 0x08, 0x8E);
-    idt_set_gate(7, (uint64_t)isr7, 0x08, 0x8E);
-    idt_set_gate(8, (uint64_t)isr8, 0x08, 0x8E);
-    idt_set_gate(9, (uint64_t)isr9, 0x08, 0x8E);
-    idt_set_gate(10, (uint64_t)isr10, 0x08, 0x8E);
-    idt_set_gate(11, (uint64_t)isr11, 0x08, 0x8E);
-    idt_set_gate(12, (uint64_t)isr12, 0x08, 0x8E);
-    idt_set_gate(13, (uint64_t)isr13, 0x08, 0x8E);
-    idt_set_gate(14, (uint64_t)isr14, 0x08, 0x8E);
-    idt_set_gate(15, (uint64_t)isr15, 0x08, 0x8E);
-    idt_set_gate(16, (uint64_t)isr16, 0x08, 0x8E);
-    idt_set_gate(17, (uint64_t)isr17, 0x08, 0x8E);
-    idt_set_gate(18, (uint64_t)isr18, 0x08, 0x8E);
-    idt_set_gate(19, (uint64_t)isr19, 0x08, 0x8E);
-    idt_set_gate(20, (uint64_t)isr20, 0x08, 0x8E);
-    idt_set_gate(21, (uint64_t)isr21, 0x08, 0x8E);
+    // Install Exception Handlers (0-21)
+    idt_set_gate(0, (uint64_t)isr0, 0x08, 0x8E);   idt_set_gate(1, (uint64_t)isr1, 0x08, 0x8E);
+    idt_set_gate(2, (uint64_t)isr2, 0x08, 0x8E);   idt_set_gate(3, (uint64_t)isr3, 0x08, 0x8E);
+    idt_set_gate(4, (uint64_t)isr4, 0x08, 0x8E);   idt_set_gate(5, (uint64_t)isr5, 0x08, 0x8E);
+    idt_set_gate(6, (uint64_t)isr6, 0x08, 0x8E);   idt_set_gate(7, (uint64_t)isr7, 0x08, 0x8E);
+    idt_set_gate(8, (uint64_t)isr8, 0x08, 0x8E);   idt_set_gate(9, (uint64_t)isr9, 0x08, 0x8E);
+    idt_set_gate(10, (uint64_t)isr10, 0x08, 0x8E); idt_set_gate(11, (uint64_t)isr11, 0x08, 0x8E);
+    idt_set_gate(12, (uint64_t)isr12, 0x08, 0x8E); idt_set_gate(13, (uint64_t)isr13, 0x08, 0x8E);
+    idt_set_gate(14, (uint64_t)isr14, 0x08, 0x8E); idt_set_gate(15, (uint64_t)isr15, 0x08, 0x8E);
+    idt_set_gate(16, (uint64_t)isr16, 0x08, 0x8E); idt_set_gate(17, (uint64_t)isr17, 0x08, 0x8E);
+    idt_set_gate(18, (uint64_t)isr18, 0x08, 0x8E); idt_set_gate(19, (uint64_t)isr19, 0x08, 0x8E);
+    idt_set_gate(20, (uint64_t)isr20, 0x08, 0x8E); idt_set_gate(21, (uint64_t)isr21, 0x08, 0x8E);
+    
+    // Install handlers for Intel-reserved exception vectors.
+    // These vectors are currently treated as fatal faults.
+    idt_set_gate(22, (uint64_t)isr22, 0x08, 0x8E); idt_set_gate(23, (uint64_t)isr23, 0x08, 0x8E);
+    idt_set_gate(24, (uint64_t)isr24, 0x08, 0x8E); idt_set_gate(25, (uint64_t)isr25, 0x08, 0x8E);
+    idt_set_gate(26, (uint64_t)isr26, 0x08, 0x8E); idt_set_gate(27, (uint64_t)isr27, 0x08, 0x8E);
+    idt_set_gate(28, (uint64_t)isr28, 0x08, 0x8E); idt_set_gate(29, (uint64_t)isr29, 0x08, 0x8E);
+    idt_set_gate(30, (uint64_t)isr30, 0x08, 0x8E);
     idt_set_gate(31, (uint64_t)isr31, 0x08, 0x8E);
     
-    // Set up IRQ handlers (IRQs 0-15 mapped to interrupts 32-47)
-    idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);
-    idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
-    idt_set_gate(34, (uint64_t)irq2, 0x08, 0x8E);
-    idt_set_gate(35, (uint64_t)irq3, 0x08, 0x8E);
-    idt_set_gate(36, (uint64_t)irq4, 0x08, 0x8E);
-    idt_set_gate(37, (uint64_t)irq5, 0x08, 0x8E);
-    idt_set_gate(38, (uint64_t)irq6, 0x08, 0x8E);
-    idt_set_gate(39, (uint64_t)irq7, 0x08, 0x8E);
-    idt_set_gate(40, (uint64_t)irq8, 0x08, 0x8E);
-    idt_set_gate(41, (uint64_t)irq9, 0x08, 0x8E);
-    idt_set_gate(42, (uint64_t)irq10, 0x08, 0x8E);
-    idt_set_gate(43, (uint64_t)irq11, 0x08, 0x8E);
-    idt_set_gate(44, (uint64_t)irq12, 0x08, 0x8E);
-    idt_set_gate(45, (uint64_t)irq13, 0x08, 0x8E);
-    idt_set_gate(46, (uint64_t)irq14, 0x08, 0x8E);
-    idt_set_gate(47, (uint64_t)irq15, 0x08, 0x8E);
+    // Install IRQ Handlers (32-47)
+    idt_set_gate(32, (uint64_t)irq0, 0x08, 0x8E);   idt_set_gate(33, (uint64_t)irq1, 0x08, 0x8E);
+    idt_set_gate(34, (uint64_t)irq2, 0x08, 0x8E);   idt_set_gate(35, (uint64_t)irq3, 0x08, 0x8E);
+    idt_set_gate(36, (uint64_t)irq4, 0x08, 0x8E);   idt_set_gate(37, (uint64_t)irq5, 0x08, 0x8E);
+    idt_set_gate(38, (uint64_t)irq6, 0x08, 0x8E);   idt_set_gate(39, (uint64_t)irq7, 0x08, 0x8E);
+    idt_set_gate(40, (uint64_t)irq8, 0x08, 0x8E);   idt_set_gate(41, (uint64_t)irq9, 0x08, 0x8E);
+    idt_set_gate(42, (uint64_t)irq10, 0x08, 0x8E);  idt_set_gate(43, (uint64_t)irq11, 0x08, 0x8E);
+    idt_set_gate(44, (uint64_t)irq12, 0x08, 0x8E);  idt_set_gate(45, (uint64_t)irq13, 0x08, 0x8E);
+    idt_set_gate(46, (uint64_t)irq14, 0x08, 0x8E);  idt_set_gate(47, (uint64_t)irq15, 0x08, 0x8E);
 
-    // Load the IDT
-    idt_flush((uint64_t)&idt_pointer);
-    
+    idt_flush(&idt_pointer);
     printk("[IDT] Interrupt Descriptor Table initialized\n");
 }
 
-// Exception handler names
 static const char *exception_messages[] = {
-    "Division By Zero",
-    "Debug",
-    "Non Maskable Interrupt",
-    "Breakpoint",
-    "Overflow",
-    "Bound Range Exceeded",
-    "Invalid Opcode",
-    "Device Not Available",
-    "Double Fault",
-    "Coprocessor Segment Overrun",
-    "Invalid TSS",
-    "Segment Not Present",
-    "Stack-Segment Fault",
-    "General Protection Fault",
-    "Page Fault",
-    "Reserved",
-    "x87 FPU Error",
-    "Alignment Check",
-    "Machine Check",
-    "SIMD Floating-Point Exception",
-    "Virtualization Exception",
-    "Control Protection Exception"
+    "Division By Zero", "Debug", "Non Maskable Interrupt", "Breakpoint",
+    "Overflow", "Bound Range Exceeded", "Invalid Opcode", "Device Not Available",
+    "Double Fault", "Coprocessor Segment Overrun", "Invalid TSS", "Segment Not Present",
+    "Stack-Segment Fault", "General Protection Fault", "Page Fault", "Reserved Exception",
+    "x87 FPU Error", "Alignment Check", "Machine Check", "SIMD Floating-Point Exception",
+    "Virtualization Exception", "Control Protection Exception"
 };
 
-// Common exception handler (called from assembly)
-void isr_handler(uint64_t isr_number, uint64_t error_code) {
-    printk("\n=== EXCEPTION ===\n");
-    printk("Exception: %s (ISR %lld)\n", 
-           isr_number < 22 ? exception_messages[isr_number] : "Unknown",
-           isr_number);
-    
-    if (error_code != 0) {
-        printk("Error Code: 0x%llx\n", error_code);
+void isr_handler(struct interrupt_registers *regs) {
+    if (regs->int_no == 3) {
+        printk("[DEBUG] Breakpoint hit at RIP: 0x%016llx\n", regs->rip);
+        return;
     }
+
+    // find exception name
+    const char *msg = (regs->int_no < 22) ? exception_messages[regs->int_no] : "Reserved/Unknown Exception";
     
-    printk("\nSystem Halted.\n");
-    
-    // Halt
-    for (;;) {
-        __asm__ volatile ("cli; hlt");
-    }
+    panic_exception(msg, regs);
 }
 
-// IRQ handler (called from assembly)
-uint64_t irq_handler(uint64_t irq_number, uint64_t current_rsp) {
-    uint8_t actual_irq = irq_number - 32;
+uint64_t irq_handler(struct interrupt_registers *regs) {
+    uint8_t actual_irq = regs->int_no - 32;
     uint64_t new_rsp = 0;
 
     if (actual_irq == 7 || actual_irq == 15) {
-            return 0;
-        }
-
-    switch (actual_irq) {
-        case 0:  // Timer
-            timer_handler();
-            // Ask the scheduler if we should switch threads
-            new_rsp = sched_tick(current_rsp);
-            break;
-        case 1:  // Keyboard
-            keyboard_handler();
-            break;
-        case 12:
-            mouse_handler();
-            break;
-        default:
-            break;
+        // If it's a real IRQ, send EOI. If it's spurious, i safely return 0 without blocking lines.
+        apic_send_eoi(); 
+        return 0;
     }
 
-    // Send EOI to APIC before switching context!
+    // Send APIC EOI *before* calling anything that can yield/switch context
     apic_send_eoi();
-    
-    return new_rsp; // If 0, assembly does not switch.
+
+    // Call dynamic driver if one is registered
+    if (irq_handlers[actual_irq] != 0) {
+        new_rsp = irq_handlers[actual_irq](regs->rsp);
+    }
+
+    return new_rsp; 
 }

@@ -12,6 +12,7 @@ CFLAGS := -O2 -g -Wall -Wextra -ffreestanding \
           -mno-red-zone \
           -fno-stack-protector \
           -fno-stack-check \
+		  -fno-builtin -nostdlib -Werror \
           -I.
 
 ASFLAGS := 

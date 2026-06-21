@@ -1,6 +1,7 @@
 #include "mouse.h"
 #include "../lib/printk.h"
 #include "../display/framebuffer.h"
+#include "../arch/idt.h"
 
 #define PS2_CMD_PORT    0x64
 #define PS2_DATA_PORT   0x60
@@ -79,6 +80,8 @@ void mouse_init(void) {
     mouse_write(0xF4);
     mouse_read(); // Acknowledge (0xFA)
 
+    irq_register_handler(12, mouse_irq_handler);
+    
     printk("[MOUSE] PS/2 Mouse initialized.\n");
 }
 
@@ -135,4 +138,13 @@ void mouse_handler(void) {
 
 mouse_state_t* mouse_get_state(void) {
     return &mouse;
+}
+
+uint64_t mouse_irq_handler(uint64_t current_rsp)
+{
+    (void)current_rsp;
+
+    mouse_handler();
+
+    return 0;
 }

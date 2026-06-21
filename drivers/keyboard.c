@@ -2,6 +2,7 @@
 #include "../lib/printk.h"
 #include "../display/terminal.h"
 #include "../shell/shell.h"
+#include "../arch/idt.h"
 
 static char kb_buffer[KB_BUFFER_SIZE];
 static volatile int kb_head = 0;
@@ -62,14 +63,15 @@ static const char scancode_to_ascii_shift[] = {
 };
 
 void keyboard_init(void) {
-    // Clear keyboard state
     kb_state.shift_pressed = false;
     kb_state.ctrl_pressed = false;
     kb_state.alt_pressed = false;
     kb_state.caps_lock = false;
     kb_state.num_lock = false;
     kb_state.scroll_lock = false;
-    
+
+    irq_register_handler(1, keyboard_irq_handler);
+
     printk("[KEYBOARD] PS/2 keyboard driver initialized\n");
 }
 
@@ -212,4 +214,13 @@ char keyboard_get_char(void) {
     char c = kb_buffer[kb_tail];
     kb_tail = (kb_tail + 1) % KB_BUFFER_SIZE;
     return c;
+}
+
+uint64_t keyboard_irq_handler(uint64_t current_rsp)
+{
+    (void)current_rsp;
+
+    keyboard_handler();
+
+    return 0;
 }

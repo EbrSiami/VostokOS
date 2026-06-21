@@ -1,5 +1,6 @@
 #include "timer.h"
 #include "../lib/printk.h"
+#include "../arch/idt.h"
 
 static volatile uint64_t timer_ticks = 0;
 static uint32_t timer_frequency = 0;
@@ -22,6 +23,8 @@ void timer_init(uint32_t frequency) {
     // Send divisor
     outb(PIT_CHANNEL0, divisor & 0xFF);         // Low byte
     outb(PIT_CHANNEL0, (divisor >> 8) & 0xFF);  // High byte
+
+    irq_register_handler(0, timer_irq_handler);
     
     printk("[TIMER] PIT initialized at %u Hz\n", frequency);
 }
@@ -71,4 +74,10 @@ void timer_wait_ticks(uint64_t ticks) {
 // get frequency
 uint32_t timer_get_frequency(void) {
     return timer_frequency;
+}
+
+uint64_t timer_irq_handler(uint64_t current_rsp) {
+    (void)current_rsp;
+    timer_handler();
+    return 0;
 }
