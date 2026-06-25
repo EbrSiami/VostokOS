@@ -6,14 +6,15 @@
 // Structure representing the CPU registers saved on the stack during interrupts
 struct interrupt_registers {
     // Registers pushed by common stub
-    uint64_t rax, rbx, rcx, rdx, rsi, rdi, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
+    uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+    uint64_t rbp, rdi, rsi, rdx, rcx, rbx, rax;
     // Pushed by macro/CPU automatically
     uint64_t int_no, error_code;
     // Pushed automatically by hardware in 64-bit mode
     uint64_t rip, cs, rflags, rsp, ss;
-};
+} __attribute__((packed));
 
-// Function pointer for clean driver registration (Fixes Design Issue 6)
+// Function pointer for clean driver registration
 typedef uint64_t (*irq_handler_t)(uint64_t current_rsp);
 
 struct idt_entry {

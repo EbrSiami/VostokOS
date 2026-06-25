@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "../lib/printk.h"
 #include "../arch/idt.h"
+#include "../kernel/sched.h"
 
 static volatile uint64_t timer_ticks = 0;
 static uint32_t timer_frequency = 0;
@@ -50,11 +51,7 @@ uint64_t timer_get_uptime_ms(void) {
 void timer_sleep_ms(uint32_t ms) {
     uint64_t target_ticks = timer_ticks + (ms * timer_frequency) / 1000;
     
-    // Busy wait (will be replaced with proper scheduling later)
-    while (timer_ticks < target_ticks) {
-        __asm__ volatile ("sti");
-        __asm__ volatile ("hlt");  // Halt until next interrupt
-    }
+    sched_sleep_current_thread(target_ticks);
 }
 
 // sleep for specified seconds
@@ -79,5 +76,5 @@ uint32_t timer_get_frequency(void) {
 uint64_t timer_irq_handler(uint64_t current_rsp) {
     (void)current_rsp;
     timer_handler();
-    return 0;
+    return sched_tick(current_rsp);
 }

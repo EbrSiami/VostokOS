@@ -186,9 +186,11 @@ void keyboard_handler(void) {
         uint8_t status = inb(KEYBOARD_STATUS_PORT);
 
         // No more data in the output buffer
-        if ((status & 0x01) == 0) {
-            break;
-        }
+        if ((status & 0x01) == 0) break;
+
+        // If bit 5 is set, this byte belongs to the mouse! 
+        // Break and let the mouse IRQ handle it.
+        if (status & 0x20) break;
 
         // Check for controller errors (timeout / parity).
         // On real hardware, electrical noise can corrupt bytes; the

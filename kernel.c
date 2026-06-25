@@ -68,6 +68,13 @@ static void hcf(void) {
 //     }
 // }
 
+// void task_b(void) {
+//     for (;;) {
+//         printk("FUCK USA\n");
+//         timer_sleep_ms(1500);
+//     }
+// }
+
 void _start(void) {
     // 1. Critical Check: Framebuffer (Required for any visual output)
     if (framebuffer_request.response == NULL || 
@@ -135,13 +142,17 @@ void _start(void) {
     // 7. Scheduling and Multitasking
     sched_init();
     
+    // here we can add our threads by thread_create(task_x);
+    // thread_create(task_a);
+    // thread_create(task_b);
+
     // 8. Hardware Drivers
     printk("[KERNEL] Initializing PCI...\n");
     pci_init();
 
     keyboard_init();
     timer_init(100); // 100 Hz
-
+    
     // 9. Enable Interrupts (Only after IDT and Drivers are ready)
     __asm__ volatile ("sti");
     printk("\n[KERNEL] Interrupts enabled!\n");

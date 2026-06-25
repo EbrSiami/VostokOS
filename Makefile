@@ -92,9 +92,9 @@ $(ISO): $(KERNEL) limine.conf
 	./limine/limine bios-install $(ISO)
 
 run: $(ISO)
-	qemu-system-x86_64 -cdrom $(ISO) -m 512M
+	qemu-system-x86_64 -cdrom $(ISO) -m 512M -enable-kvm -cpu host -d int,cpu_reset,exec -D qemu.log
 
 clean:
-	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o kernel/*.o fs/*.o gui/*.o *.iso *.tar iso_root
+	rm -rf *.o display/*.o font/*.o lib/*.o arch/*.o drivers/*.o shell/*.o *.elf mm/*.o kernel/*.o fs/*.o gui/*.o *.iso *.tar iso_root qemu.log
 
 .PHONY: all run clean

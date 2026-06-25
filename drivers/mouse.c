@@ -86,53 +86,60 @@ void mouse_init(void) {
 }
 
 void mouse_handler(void) {
-    uint8_t status = inb(PS2_CMD_PORT);
-    if (!(status & 0x20)) return;
-    uint8_t data = inb(PS2_DATA_PORT);
+    while (1) {
+        uint8_t status = inb(PS2_CMD_PORT);
 
-    switch (mouse_cycle) {
-        case 0:
-            // Sync byte: Bit 3 is always 1 in a valid packet
-            if (data & 0x08) {
-                mouse_packet[0] = data;
+        if ((status & 0x01) == 0) break; // No data
+
+        // if bit 5 is clear, this byte belongs to the keyboard!
+        if ((status & 0x20) == 0) break; 
+
+        uint8_t data = inb(PS2_DATA_PORT);
+
+        switch (mouse_cycle) {
+            case 0:
+                // Sync byte: Bit 3 is always 1 in a valid packet
+                if (data & 0x08) {
+                    mouse_packet[0] = data;
+                    mouse_cycle++;
+                }
+                break;
+            case 1:
+                mouse_packet[1] = data;
                 mouse_cycle++;
-            }
-            break;
-        case 1:
-            mouse_packet[1] = data;
-            mouse_cycle++;
-            break;
-        case 2:
-            mouse_packet[2] = data;
-            
-            // We have a full packet, process it!
-            mouse.left_click = mouse_packet[0] & 0x01;
-            mouse.right_click = mouse_packet[0] & 0x02;
-            mouse.middle_click = mouse_packet[0] & 0x04;
+                break;
+            case 2:
+                mouse_packet[2] = data;
+                
+                // We have a full packet, process it!
+                mouse.left_click = mouse_packet[0] & 0x01;
+                mouse.right_click = mouse_packet[0] & 0x02;
+                mouse.middle_click = mouse_packet[0] & 0x04;
 
-            // X movement (Byte 1)
-            int d_x = mouse_packet[1];
-            // If X sign bit is set, it's negative (two's complement)
-            if (mouse_packet[0] & 0x10) d_x -= 256; 
-            
-            // Y movement (Byte 2)
-            int d_y = mouse_packet[2];
-            // If Y sign bit is set, it's negative
-            if (mouse_packet[0] & 0x20) d_y -= 256;
+                // X movement (Byte 1)
+                int d_x = mouse_packet[1];
+                // If X sign bit is set, it's negative (two's complement)
+                if (mouse_packet[0] & 0x10) d_x -= 256; 
+                
+                // Y movement (Byte 2)
+                int d_y = mouse_packet[2];
+                // If Y sign bit is set, it's negative
+                if (mouse_packet[0] & 0x20) d_y -= 256;
 
-            // Update coordinates (PS/2 Y axis goes up, screen Y axis goes down)
-            mouse.x += d_x;
-            mouse.y -= d_y;
+                // Update coordinates (PS/2 Y axis goes up, screen Y axis goes down)
+                mouse.x += d_x;
+                mouse.y -= d_y;
 
-            // Clamp to screen bounds
-            framebuffer_t* fb = fb_get();
-            if (mouse.x < 0) mouse.x = 0;
-            if (mouse.x >= (int)fb->width) mouse.x = fb->width - 1;
-            if (mouse.y < 0) mouse.y = 0;
-            if (mouse.y >= (int)fb->height) mouse.y = fb->height - 1;
+                // Clamp to screen bounds
+                framebuffer_t* fb = fb_get();
+                if (mouse.x < 0) mouse.x = 0;
+                if (mouse.x >= (int)fb->width) mouse.x = fb->width - 1;
+                if (mouse.y < 0) mouse.y = 0;
+                if (mouse.y >= (int)fb->height) mouse.y = fb->height - 1;
 
-            mouse_cycle = 0;
-            break;
+                mouse_cycle = 0;
+                break;
+        }
     }
 }
 

@@ -3,6 +3,7 @@
 #include "../lib/panic.h"
 #include "../lib/printk.h"
 #include "../lib/string.h"
+#include "../kernel/sched.h"
 
 // Array of registered IRQ handlers (0-15)
 static irq_handler_t irq_handlers[16] = {0};
@@ -12,6 +13,8 @@ static struct idt_ptr idt_pointer;
 
 // Type-safe idt_flush declaration
 extern void idt_flush(struct idt_ptr *ptr);
+
+extern void isr250(void);
 
 // External declarations for ISRs 0-31
 #define DECLARE_ISR(num) extern void isr##num(void);
@@ -86,6 +89,8 @@ void idt_init(void) {
     idt_set_gate(44, (uint64_t)irq12, 0x08, 0x8E);  idt_set_gate(45, (uint64_t)irq13, 0x08, 0x8E);
     idt_set_gate(46, (uint64_t)irq14, 0x08, 0x8E);  idt_set_gate(47, (uint64_t)irq15, 0x08, 0x8E);
 
+    idt_set_gate(250, (uint64_t)isr250, 0x08, 0x8E);
+    
     idt_flush(&idt_pointer);
     printk("[IDT] Interrupt Descriptor Table initialized\n");
 }
@@ -112,22 +117,29 @@ void isr_handler(struct interrupt_registers *regs) {
 }
 
 uint64_t irq_handler(struct interrupt_registers *regs) {
-    uint8_t actual_irq = regs->int_no - 32;
-    uint64_t new_rsp = 0;
+    uint64_t current_rsp = (uint64_t)regs; 
+    
+    if (regs->int_no >= 32 && regs->int_no <= 47) {
+        uint8_t actual_irq = regs->int_no - 32;
+        
+        if (actual_irq == 7 || actual_irq == 15) {
+            apic_send_eoi(); 
+            return current_rsp;
+        }
 
-    if (actual_irq == 7 || actual_irq == 15) {
-        // If it's a real IRQ, send EOI. If it's spurious, i safely return 0 without blocking lines.
-        apic_send_eoi(); 
-        return 0;
+        apic_send_eoi();
+
+        if (irq_handlers[actual_irq] != 0) {
+            uint64_t returned_rsp = irq_handlers[actual_irq](current_rsp);
+            if (returned_rsp != 0) return returned_rsp;
+        }
+    } 
+
+    // Handle Software Yield (250)
+    else if (regs->int_no == 250) {
+        // Do NOT send APIC EOI. Just switch context.
+        return sched_tick(current_rsp);
     }
 
-    // Send APIC EOI *before* calling anything that can yield/switch context
-    apic_send_eoi();
-
-    // Call dynamic driver if one is registered
-    if (irq_handlers[actual_irq] != 0) {
-        new_rsp = irq_handlers[actual_irq](regs->rsp);
-    }
-
-    return new_rsp; 
+    return current_rsp; 
 }

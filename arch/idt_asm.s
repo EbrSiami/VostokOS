@@ -61,6 +61,12 @@ ISR_NOERR 29
 ISR_ERR   30
 ISR_NOERR 31
 
+.global isr250
+isr250:
+    pushq $0                # Dummy error code
+    pushq $250              # Push vector number
+    jmp irq_common_stub
+
 # Define all IRQs (0-15 mapped to 32-47)
 IRQ 0, 32
 IRQ 1, 33
@@ -104,7 +110,7 @@ isr_common_stub:
 
     # Align the stack to 16 bytes before calling C
     movq %rsp, %rbp         
-    andq $-16, %rsp         
+    andq $-16, %rsp     
     
     call isr_handler
 
@@ -155,21 +161,21 @@ irq_common_stub:
     movq %rsp, %rdi         
 
     # Stack alignment using RBP
-    movq %rsp, %rbp         
-    andq $-16, %rsp         
+    movq %rsp, %rbx       
+    andq $-16, %rsp        
 
     call irq_handler
 
-    # Return the stack to its pre-alignment state
-    movq %rbp, %rsp
-
-    # Check for Context Switch (returned new RSP in RAX)
     testq %rax, %rax
     jz .no_switch
-    movq %rax, %rsp         # Context Switch occurs here
+
+    movq %rax, %rsp         
+    jmp .restore_regs
 
 .no_switch:
-    # Restore registers
+    movq %rbx, %rsp
+
+.restore_regs:
     popq %rax
     popq %rbx
     popq %rcx
@@ -186,7 +192,6 @@ irq_common_stub:
     popq %r14
     popq %r15
     
-    # Clean up error code and IRQ number
     addq $16, %rsp   
     iretq
 
