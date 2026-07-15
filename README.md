@@ -5,6 +5,8 @@
 ![Bootloader](https://img.shields.io/badge/bootloader-Limine-brightgreen)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
+# project will not continue until further notice for some reasons....
+
 ## I dedicate the line-by-line code I wrote to develop this operating system to Sergei Korolev :)
 
 This OS is my first attempt at developing a 64-bit operating system completely from scratch. 
